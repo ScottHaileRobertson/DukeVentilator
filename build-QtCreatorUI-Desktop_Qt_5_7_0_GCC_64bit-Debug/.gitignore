@@ -1,1 +1,6 @@
 *.qmake.stash
+*.o
+/Makefile
+/moc_mainwidget.cpp
+/QtCreatorUI
+*.h
