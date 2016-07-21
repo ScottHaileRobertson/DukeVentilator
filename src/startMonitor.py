@@ -19,7 +19,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.setWindowTitle("Duke Animal Monitor v" + VERSION_STRING)
         
         # CONSTANTS
-        self.MIN_DATA_FETCH_PERIOD = 0.0005
+        self.MIN_DATA_FETCH_PERIOD = 0.001
         self.MIN_PLOT_UPDATE_PERIOD = 0.01 # A little more than 60Hz
         self.PLOT_TIME_RANGE = 10 # Total seconds of display
         self.QUEUE_SIZE = int(round(self.PLOT_TIME_RANGE/self.MIN_DATA_FETCH_PERIOD))
@@ -164,7 +164,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         # Copy data from buffer under lock, then reset index to zero so new data
         # will be added to the beggining of the buffer again
         self.dataFetcher.lock.acquire()
-        rollDist = -self.dataFetcher.sync_idx.value
+        rollDist = np.int32(-self.dataFetcher.sync_idx.value)
         hasNewData = (self.dataFetcher.sync_idx.value > 0)
         if(hasNewData):
             # Copy new data to plot list
@@ -218,8 +218,8 @@ class DataMonitoringWindow(QtGui.QWidget):
             self.slow_maxPressure_queue.append(max_val)
             self.minPressureLine.setData(self.slow_time_queue,self.slow_minPressure_queue)
             self.maxPressureLine.setData(self.slow_time_queue,self.slow_maxPressure_queue)
-            self.ui.maxPressureText.setPlainText("Max Press: %0.3f" % (max_val))
-            self.ui.minPressureText.setPlainText("Min Press: %0.3f" % (min_val)) 
+            self.ui.maxPressureText.setPlainText("Max Pres: %0.3f" % (max_val))
+            self.ui.minPressureText.setPlainText("Min Pres: %0.3f" % (min_val)) 
         
     def closeEvent(self, ce):
         self.stopGraphing()

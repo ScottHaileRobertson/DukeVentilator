@@ -3,6 +3,7 @@ import time
 import multiprocessing as mp 
 import numpy as np
 import csv
+import spidev
 
 class TimedDataFetcher:
   def __init__(self, buffersize, fetchperiod):
@@ -10,6 +11,7 @@ class TimedDataFetcher:
     self.BUFFERSIZE = buffersize
     self.FETCHPERIOD = fetchperiod
     self.isFetching = False
+    self.spi = []
     
     # Create lock to prevent clashes between graphing/fetching processes
     self.lock = mp.Lock()
@@ -109,14 +111,14 @@ class TimedDataFetcher:
       if wasFetching:
           self.startProcess()  
   def getDataFromChannel(self, channel):
-      #adc = spi.xfer2([1,(8+channel)<<4,0]) 
-      #return ((adc[1]&3) << 8) + adc[2]
-      return 100*np.random.random_sample()
+      adc = self.spi.xfer2([1,(8+channel)<<4,0]) 
+      return ((adc[1]&3) << 8) + adc[2]
+      #return 100*np.random.random_sample()
       
   def fetchData(self):  
     # Open SPI bus
-    #spi = spidev.SpiDev()
-    #spi.open(0,0)
+    self.spi = spidev.SpiDev()
+    self.spi.open(0,0)
   
     # Fetch new data until the end of time, or when the user closes the window
     while True:
