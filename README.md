@@ -3,4 +3,4 @@ INSTALLATION
 This script belongs in ___ on the Raspberry pi. 
 
 HOW TO RUN
-This script can be called by executing startMOnitor.py
+This script can be called by executing startMonitor.py
