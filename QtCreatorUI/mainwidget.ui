@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>560</width>
-    <height>428</height>
+    <height>488</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -310,6 +310,9 @@ p, li { white-space: pre-wrap; }
            </property>
            <property name="decimals">
             <number>1</number>
+           </property>
+           <property name="minimum">
+            <double>0.500000000000000</double>
            </property>
            <property name="maximum">
             <double>60.000000000000000</double>

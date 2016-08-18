@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file '../QtCreatorUI/mainwidget.ui'
 #
-# Created: Thu Jul 21 12:32:11 2016
+# Created: Thu Aug 11 13:13:20 2016
 #      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -26,7 +26,7 @@ except AttributeError:
 class Ui_MainWidget(object):
     def setupUi(self, MainWidget):
         MainWidget.setObjectName(_fromUtf8("MainWidget"))
-        MainWidget.resize(560, 428)
+        MainWidget.resize(560, 488)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -144,6 +144,7 @@ class Ui_MainWidget(object):
         self.fastUpdatePeriod.setButtonSymbols(QtGui.QAbstractSpinBox.UpDownArrows)
         self.fastUpdatePeriod.setAccelerated(False)
         self.fastUpdatePeriod.setDecimals(1)
+        self.fastUpdatePeriod.setMinimum(0.5)
         self.fastUpdatePeriod.setMaximum(60.0)
         self.fastUpdatePeriod.setProperty("value", 5.0)
         self.fastUpdatePeriod.setObjectName(_fromUtf8("fastUpdatePeriod"))
