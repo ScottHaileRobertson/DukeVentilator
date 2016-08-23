@@ -13,6 +13,8 @@ class TimedDataFetcher:
     self.isFetching = False
     self.spi = []
     
+    print "BUFFERSIZE = %d" % self.BUFFERSIZE
+    
     # Create lock to prevent clashes between graphing/fetching processes
     self.lock = mp.Lock()
 
@@ -34,7 +36,7 @@ class TimedDataFetcher:
     
     self.sync_bufferStartIdx = mp.Value('I', 0)
     self.sync_bufferLength = mp.Value('I', 0)
-    self.sync_bufferEndIdx = mp.Value('I', 0)
+    self.sync_bufferEndIdx = mp.Value('I', -1)
     self.sync_bufferFull = mp.Value('I', 0)  # SHOULD BE BOOLEAN
     
     self.lock.release() 
@@ -57,7 +59,7 @@ class TimedDataFetcher:
     
     self.sync_bufferStartIdx = mp.Value('I', 0)
     self.sync_bufferLength = mp.Value('I', 0)
-    self.sync_bufferEndIdx = mp.Value('I', 0)
+    self.sync_bufferEndIdx = mp.Value('I', -1)
     self.sync_bufferFull = mp.Value('I', 0)  # SHOULD BE BOOLEAN
     
     self.lock.release()         
@@ -80,12 +82,13 @@ class TimedDataFetcher:
       
       self.sync_bufferStartIdx.value = 0
       self.sync_bufferLength.value = 0
-      self.sync_bufferEndIdx.value = 0
+      self.sync_bufferEndIdx.value = -1
       self.sync_bufferFull.value = 0  # SHOULD BE BOOLEAN
       
       # free up the lock 
       self.lock.release()
       
+      print "BUFFER SIZE UPDATED."
       
           
   def getDataFromChannel(self, channel):
@@ -101,6 +104,7 @@ class TimedDataFetcher:
     # Fetch new data until the end of time, or when the user closes the window
     while self.isFetching:
       # Get timestamp for data
+      print "FETCHING NEW DATA!"
       t_stamp = time.time() - self.start_time
     
       # Fetch new data
@@ -109,27 +113,34 @@ class TimedDataFetcher:
       o2 = self.getDataFromChannel(1)
       n2 = self.getDataFromChannel(2)
       hp = self.getDataFromChannel(3)
-      ecg = self.getDataFromChannel(4)
+      trig = self.getDataFromChannel(4)
+      ecg = self.getDataFromChannel(6)
       temp = self.getDataFromChannel(5)
-      trig = self.getDataFromChannel(6)
+      
     
       # Add data to buffer and increment index under lock
       self.lock.acquire()
+      self.sync_bufferEndIdx.value += 1
+      self.sync_bufferLength.value += 1
       
-      self.sync_bufferEndIdx.value = self.sync_bufferEndIdx.value + 1
-      self.sync_bufferLength.value = self.sync_bufferLength.value + 1
-      if(self.sync_bufferLength.value + 1 >= (self.BUFFERSIZE)):
+      if(self.sync_bufferLength.value >= (self.BUFFERSIZE)):
         # Buffer has overrun! (will be reset when/if plotting catches up)
         self.sync_bufferFull.value = 1
         self.sync_bufferLength.value = self.BUFFERSIZE
-        print "BUFFER FULL ________!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+        print "   BUFFER FULL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
         
       # Buffer has space, so add new data
-      while(self.sync_bufferEndIdx.value >= self.BUFFERSIZE):
-        self.sync_bufferEndIdx.value = self.sync_bufferEndIdx.value - self.BUFFERSIZE
-      
+      if(self.sync_bufferEndIdx.value >= self.BUFFERSIZE):
+        print "   BUFFER wraps... unwrapping"
+        while(self.sync_bufferEndIdx.value >= self.BUFFERSIZE):
+          self.sync_bufferEndIdx.value = self.sync_bufferEndIdx.value - self.BUFFERSIZE
+      print "   Incremented buffer end to %d" % (self.sync_bufferEndIdx.value)
+      print "   Incremented buffer length to %d" % (self.sync_bufferLength.value)
       self.lock.release()
       
+      print "   setting self.sync_time_buf[%d] = %d" % (self.sync_bufferEndIdx.value, t_stamp)
+      print "   setting self.sync_canula_buf[%d] = %d" % (self.sync_bufferEndIdx.value, canula)
+      print "   setting self.sync_trig_buf[%d] = %d" % (self.sync_bufferEndIdx.value, trig)
       self.sync_time_buf[self.sync_bufferEndIdx.value] = t_stamp
       self.sync_canula_buf[self.sync_bufferEndIdx.value] = canula
       #self.sync_o2_buf[self.sync_bufferEndIdx.value] = o2
@@ -141,7 +152,7 @@ class TimedDataFetcher:
 
       # Write to csvfile
       #self.csvwriter.writerow([t_stamp,canula,o2,n2,hp,ecg,temp,trig])
-      
+      print "FETCHED NEW DATA."
       time.sleep(self.FETCHPERIOD) 
       
   def startFetching(self):

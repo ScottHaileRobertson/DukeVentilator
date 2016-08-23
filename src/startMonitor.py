@@ -19,10 +19,10 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.setWindowTitle("Duke Animal Monitor v" + VERSION_STRING)
         
         # CONSTANTS
-        self.MIN_DATA_FETCH_PERIOD = 0.0005
-        self.MIN_PLOT_UPDATE_PERIOD = 0.01 # A little more than 60Hz
+        self.MIN_DATA_FETCH_PERIOD = 5
+        self.MIN_PLOT_UPDATE_PERIOD = 5 # A little more than 60Hz
         self.PLOT_TIME_RANGE = 10 # Total seconds of display
-        self.QUEUE_SIZE = int(round(0.5*self.PLOT_TIME_RANGE/self.MIN_DATA_FETCH_PERIOD))
+        self.QUEUE_SIZE = int(round(2*self.PLOT_TIME_RANGE/self.MIN_DATA_FETCH_PERIOD))
         self.TIME_SHIFT_PCT = 0.9
         self.TEXT_UPDATE_PERIOD = 1
         self.NEXT_TEXT_UPDATE = 3
@@ -34,14 +34,14 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.dataFetcher = df.TimedDataFetcher(self.QUEUE_SIZE, self.MIN_DATA_FETCH_PERIOD)
                 
         # Setup queues for plotting data as all NaNs
-        self.time_queue = np.empty(self.QUEUE_SIZE)
-        self.canula_queue = np.empty(self.QUEUE_SIZE)
-        #self.o2_queue = np.empty(self.QUEUE_SIZE)
-        #self.n2_queue = np.empty(self.QUEUE_SIZE)
-        #self.hp_queue = np.empty(self.QUEUE_SIZE)
-        #self.ecg_queue = np.empty(self.QUEUE_SIZE)
-        #self.temp_queue = np.empty(self.QUEUE_SIZE)
-        self.trig_queue = np.empty(self.QUEUE_SIZE)
+        self.time_queue = np.zeros(self.QUEUE_SIZE)
+        self.canula_queue = np.zeros(self.QUEUE_SIZE)
+        #self.o2_queue = np.zeros(self.QUEUE_SIZE)
+        #self.n2_queue = np.zeros(self.QUEUE_SIZE)
+        #self.hp_queue = np.zeros(self.QUEUE_SIZE)
+        #self.ecg_queue = np.zeros(self.QUEUE_SIZE)
+        #self.temp_queue = np.zeros(self.QUEUE_SIZE)
+        self.trig_queue = np.zeros(self.QUEUE_SIZE)
 
         # Setup for slow plot data
         self.slow_time_queue = []
@@ -98,17 +98,17 @@ class DataMonitoringWindow(QtGui.QWidget):
         
         # Update plotting size
         old_queue_size = self.QUEUE_SIZE
-        new_queue_size = int(round(self.PLOT_TIME_RANGE/self.MIN_DATA_FETCH_PERIOD))
+        new_queue_size = int(round(2*self.PLOT_TIME_RANGE/self.MIN_DATA_FETCH_PERIOD))
         copySize = min(old_queue_size, new_queue_size)
                 
-        new_time_queue = np.empty(new_queue_size)
-        new_canula_queue = np.empty(new_queue_size)
-        #new_o2_queue = np.empty(new_queue_size)
-        #new_n2_queue = np.empty(new_queue_size)
-        #new_hp_queue = np.empty(new_queue_size)
-        #new_ecg_queue = np.empty(new_queue_size)
-        #new_temp_queue = np.empty(new_queue_size)
-        new_trig_queue = np.empty(new_queue_size)
+        new_time_queue = np.zeros(new_queue_size)
+        new_canula_queue = np.zeros(new_queue_size)
+        #new_o2_queue = np.zeros(new_queue_size)
+        #new_n2_queue = np.zeros(new_queue_size)
+        #new_hp_queue = np.zeros(new_queue_size)
+        #new_ecg_queue = np.zeros(new_queue_size)
+        #new_temp_queue = np.zeros(new_queue_size)
+        new_trig_queue = np.zeros(new_queue_size)
         
         new_time_queue[0:(copySize-1)] = self.time_queue[0:(copySize-1)] 
         new_canula_queue[0:(copySize-1)] = self.canula_queue[0:(copySize-1)]  
@@ -156,76 +156,101 @@ class DataMonitoringWindow(QtGui.QWidget):
             self.timer.stop()
             
     def updateUI(self):  
+        print "UPDATING UI"
         elapsed_time = time.time() - self.start_time
           
-        # Copy data from buffer under lock, then reset index to zero so new data
-        # will be added to the beggining of the buffer again
+        # Under lock, find how much data we have to read
         self.dataFetcher.lock.acquire()
-        
-        # Find how much data we have to read
         nDataToRead = np.int32(self.dataFetcher.sync_bufferLength.value);
-        endRead = self.dataFetcher.sync_bufferEndIdx.value
+        lastIdx = self.dataFetcher.sync_bufferEndIdx.value
+        endRead = lastIdx + 1
         if(self.dataFetcher.sync_bufferFull.value):
           startRead = 0
         else:
           startRead = self.dataFetcher.sync_bufferStartIdx.value
         stopReading = min(startRead+nDataToRead,self.dataFetcher.BUFFERSIZE)
-        
+        print "   nDataToRead = %d" % (nDataToRead)
+        print "   startRead = %d" % (startRead)
+        print "   lastIdx = %d" % (lastIdx)
+        print "   endRead = %d" % (endRead)
+        print "   stopReading = %d" % (stopReading)
+        self.dataFetcher.lock.release()
         
         # We can now copy from the buffer safely.
-        copyIdx = 0
-        #print "Copying from %d to %d" % (startRead, stopReading)
-        for i in range(startRead,stopReading):   
-            self.time_queue[copyIdx] = self.dataFetcher.sync_time_buf[i]
-            self.canula_queue[copyIdx] = self.dataFetcher.sync_canula_buf[i]
-            #self.o2_queue[copyIdx] = self.dataFetcher.sync_o2_buf[i]
-            #self.n2_queue[copyIdx] = self.dataFetcher.sync_n2_buf[i]
-            #self.hp_queue[copyIdx] = self.dataFetcher.sync_hp_buf[i]
-            #self.ecg_queue[copyIdx] = self.dataFetcher.sync_ecg_buf[i]
-            #self.temp_queue[copyIdx] = self.dataFetcher.sync_temp_buf[i]
-            self.trig_queue[copyIdx] = self.dataFetcher.sync_trig_buf[i]
-            #print "Time %f" % self.time_queue[copyIdx]
-            copyIdx += 1
-        
-        # In case data has wrapped... read the wrapped data too
-        if(endRead <= startRead):
-          #print "   Copying from %d to %d" % (0, endRead)
-          for i in range(endRead):
-            self.time_queue[copyIdx] = self.dataFetcher.sync_time_buf[i]
-            self.canula_queue[copyIdx] = self.dataFetcher.sync_canula_buf[i]
-            #self.o2_queue[copyIdx] = self.dataFetcher.sync_o2_buf[i]
-            #self.n2_queue[copyIdx] = self.dataFetcher.sync_n2_buf[i]
-            #self.hp_queue[copyIdx] = self.dataFetcher.sync_hp_buf[i]
-            #self.ecg_queue[copyIdx] = self.dataFetcher.sync_ecg_buf[i]
-            #self.temp_queue[copyIdx] = self.dataFetcher.sync_temp_buf[i]
-            self.trig_queue[copyIdx] = self.dataFetcher.sync_trig_buf[i]
-            copyIdx += 1
-          
-        # Data is copied, so move pointer to free up buffer space
-        #self.dataFetcher.lock.acquire()
-        self.dataFetcher.sync_bufferStartIdx.value = self.dataFetcher.sync_bufferEndIdx.value
-        self.dataFetcher.sync_bufferLength.value = 0
-        self.dataFetcher.sync_bufferFull.value = 0
-        self.dataFetcher.lock.release()
-    
-        # Now we can take all the time we want to plot the data; the 
-        # fetching process will keep taking new data while this slow plot 
-        # operation occurs. Nevertheless, we try to update the plotted 
-        # line quickly 
         if(nDataToRead > 0):
-            # Roll data to put newest data last
-            self.time_queue = np.roll(self.time_queue,-nDataToRead)
-            self.canula_queue = np.roll(self.canula_queue,-nDataToRead)
-            #self.o2_queue = np.roll(self.o2_queue,-nDataToRead)
-            #self.n2_queue = np.roll(self.n2_queue,-nDataToRead)
-            #self.hp_queue = np.roll(self.hp_queue,-nDataToRead)
-            #self.ecg_queue = np.roll(self.ecg_queue,-nDataToRead)
-            #self.temp_queue = np.roll(self.temp_queue,-nDataToRead)
-            self.trig_queue = np.roll(self.trig_queue,-nDataToRead)
+          copyIdx = 0
+          for i in range(startRead,stopReading): 
+              print "   Copying beggining of buffer[%d] to plot[%d]..." % (i, copyIdx)
+              print "      time_buffer = %d" % (self.dataFetcher.sync_time_buf[i])
+              print "      canula_buffer = %d" % (self.dataFetcher.sync_canula_buf[i])
+              print "      trig_buffer = %d" % (self.dataFetcher.sync_trig_buf[i])  
+              self.time_queue[copyIdx] = self.dataFetcher.sync_time_buf[i]
+              self.canula_queue[copyIdx] = self.dataFetcher.sync_canula_buf[i]
+              #self.o2_queue[copyIdx] = self.dataFetcher.sync_o2_buf[i]
+              #self.n2_queue[copyIdx] = self.dataFetcher.sync_n2_buf[i]
+              #self.hp_queue[copyIdx] = self.dataFetcher.sync_hp_buf[i]
+              #self.ecg_queue[copyIdx] = self.dataFetcher.sync_ecg_buf[i]
+              #self.temp_queue[copyIdx] = self.dataFetcher.sync_temp_buf[i]
+              self.trig_queue[copyIdx] = self.dataFetcher.sync_trig_buf[i]
+              #print "Time %f" % self.time_queue[copyIdx]
+              copyIdx += 1
+        
+          # In case data has wrapped... read the wrapped data too
+          if(endRead <= startRead):
+            #print "   Copying from %d to %d" % (0, endRead)
+            for i in range(0,endRead):
+              print "   Copying end of buffer[%d] to plot[%d]..." % (i, copyIdx)
+              print "      time_buffer = %d" % (self.dataFetcher.sync_time_buf[i])
+              print "      canula_buffer = %d" % (self.dataFetcher.sync_canula_buf[i])
+              print "      trig_buffer = %d" % (self.dataFetcher.sync_trig_buf[i])  
+              self.time_queue[copyIdx] = self.dataFetcher.sync_time_buf[i]
+              self.canula_queue[copyIdx] = self.dataFetcher.sync_canula_buf[i]
+              #self.o2_queue[copyIdx] = self.dataFetcher.sync_o2_buf[i]
+              #self.n2_queue[copyIdx] = self.dataFetcher.sync_n2_buf[i]
+              #self.hp_queue[copyIdx] = self.dataFetcher.sync_hp_buf[i]
+              #self.ecg_queue[copyIdx] = self.dataFetcher.sync_ecg_buf[i]
+              #self.temp_queue[copyIdx] = self.dataFetcher.sync_temp_buf[i]
+              self.trig_queue[copyIdx] = self.dataFetcher.sync_trig_buf[i]
+              copyIdx += 1
+          
+          # Data is copied, so move pointer to free up buffer space under lock
+          self.dataFetcher.lock.acquire()
+          print "   Reseting start of buffer from %d to %d (alternative = %d)" % (self.dataFetcher.sync_bufferStartIdx.value, endRead, stopReading)
+          print "   Reseting buffer length from %d to %d" % (self.dataFetcher.sync_bufferLength.value, self.dataFetcher.sync_bufferLength.value - nDataToRead)
+          self.dataFetcher.sync_bufferStartIdx.value = endRead
+          self.dataFetcher.sync_bufferLength.value = self.dataFetcher.sync_bufferLength.value - nDataToRead 
+          #self.dataFetcher.sync_bufferFull.value = 0
+          self.dataFetcher.lock.release()
+    
+          # Now we can take all the time we want to plot the data; the 
+          # fetching process will keep taking new data while this slow plot 
+          # operation occurs. Nevertheless, we try to update the plotted 
+          # line quickly 
+        
+          # Roll data to put newest data last
+          np.set_printoptions(formatter={'float': '{: 0.0f}'.format})
+          print "   Rolling data by %d" % -nDataToRead
+          print "   Before roll"
+          print "   time_queue = ", self.time_queue
+          print "   canula_queue = ", self.canula_queue
+          print "   trig_queue = ", self.trig_queue
+          self.time_queue = np.roll(self.time_queue,-nDataToRead)
+          self.canula_queue = np.roll(self.canula_queue,-nDataToRead)
+          #self.o2_queue = np.roll(self.o2_queue,-nDataToRead)
+          #self.n2_queue = np.roll(self.n2_queue,-nDataToRead)
+          #self.hp_queue = np.roll(self.hp_queue,-nDataToRead)
+          #self.ecg_queue = np.roll(self.ecg_queue,-nDataToRead)
+          #self.temp_queue = np.roll(self.temp_queue,-nDataToRead)
+          self.trig_queue = np.roll(self.trig_queue,-nDataToRead)
+          
+          print "   After roll"
+          print "   time_queue = ", self.time_queue
+          print "   canula_queue = ", self.canula_queue
+          print "   trig_queue = ", self.trig_queue    
                 
-            # Show the new data
-            self.pressureLine.setData(self.time_queue,self.canula_queue)
-            self.triggerLine.setData(self.time_queue,self.trig_queue)
+          # Show the new data
+          self.pressureLine.setData(self.time_queue,self.canula_queue)
+          self.triggerLine.setData(self.time_queue,self.trig_queue)
           
         # Update time axis if necessary
         if(elapsed_time > self.maxXlim):
@@ -248,6 +273,9 @@ class DataMonitoringWindow(QtGui.QWidget):
             self.maxPressureLine.setData(self.slow_time_queue,self.slow_maxPressure_queue)
             self.ui.maxPressureText.setPlainText("Max Pres: %0.3f" % (max_val))
             self.ui.minPressureText.setPlainText("Min Pres: %0.3f" % (min_val)) 
+            
+        # Wait a bit
+        time.sleep(self.MIN_PLOT_UPDATE_PERIOD) 
         
     def closeEvent(self, ce):
         self.stopGraphing()
