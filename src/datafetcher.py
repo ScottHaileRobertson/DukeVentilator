@@ -16,14 +16,16 @@ class TimedDataFetcher:
     print "BUFFERSIZE = %d" % self.BUFFERSIZE
     
     # Create lock to prevent clashes between graphing/fetching processes
-    self.lock = mp.Lock()
+    self.indexLock = mp.Lock()
+    self.sizeLock = mp.Lock()
 
     # Create dummy csv file
     #self.csvfile = []
     #self.csvwriter = []
 
     # Setup an array to buffer values that are read off the pressure monitors 
-    self.lock.acquire()
+    self.indexLock.acquire()
+    self.sizeLock.acquire()
     
     self.sync_time_buf = mp.Array('d',range(self.BUFFERSIZE))
     self.sync_canula_buf = mp.Array('d',range(self.BUFFERSIZE))
@@ -38,16 +40,19 @@ class TimedDataFetcher:
     self.sync_bufferLength = mp.Value('I', 0)
     self.sync_bufferEndIdx = mp.Value('I', -1)
     self.sync_bufferFull = mp.Value('I', 0)  # SHOULD BE BOOLEAN
-    
-    self.lock.release() 
+    self.sizeLock.release()
+    self.indexLock.release() 
     
     self.fetch_process = mp.Process(target=self.fetchData, args=(), 
                            name='FetchProcess')
                            
   def newStartTime(self,newStartTime):
     print("UPDATING START TIME")
-    self.lock.acquire()
+    self.indexLock.acquire()
     self.start_time = newStartTime
+    
+    
+    self.sizeLock.acquire()
     self.sync_time_buf = mp.Array('d',range(self.BUFFERSIZE))
     self.sync_canula_buf = mp.Array('d',range(self.BUFFERSIZE))
     #self.sync_o2_buf = mp.Array('d',range(self.BUFFERSIZE))
@@ -62,13 +67,15 @@ class TimedDataFetcher:
     self.sync_bufferEndIdx = mp.Value('I', -1)
     self.sync_bufferFull = mp.Value('I', 0)  # SHOULD BE BOOLEAN
     
-    self.lock.release()         
+    self.sizeLock.release()
+    self.indexLock.release()      
         
   def updateBufferSize(self, newBufferSize):
       print("UPDATING BUFFER SIZE from %d to %d" % (self.BUFFERSIZE, newBufferSize))
       
       # Do everything under lock
-      self.lock.acquire()
+      self.indexLock.acquire()
+      self.sizeLock.acquire()
       
       self.BUFFERSIZE = newBufferSize
       self.sync_time_buf = mp.Array('d',range(self.BUFFERSIZE))
@@ -86,7 +93,8 @@ class TimedDataFetcher:
       self.sync_bufferFull.value = 0  # SHOULD BE BOOLEAN
       
       # free up the lock 
-      self.lock.release()
+      self.sizeLock.release()
+      self.indexLock.release() 
       
       print "BUFFER SIZE UPDATED."
       
@@ -119,7 +127,8 @@ class TimedDataFetcher:
       
     
       # Add data to buffer and increment index under lock
-      self.lock.acquire()
+      self.indexLock.acquire()
+      self.sizeLock.acquire()
       self.sync_bufferEndIdx.value += 1
       self.sync_bufferLength.value += 1
       
@@ -136,11 +145,9 @@ class TimedDataFetcher:
           self.sync_bufferEndIdx.value = self.sync_bufferEndIdx.value - self.BUFFERSIZE
       print "   Incremented buffer end to %d" % (self.sync_bufferEndIdx.value)
       print "   Incremented buffer length to %d" % (self.sync_bufferLength.value)
-      self.lock.release()
+      self.indexLock.release()
       
-      print "   setting self.sync_time_buf[%d] = %d" % (self.sync_bufferEndIdx.value, t_stamp)
-      print "   setting self.sync_canula_buf[%d] = %d" % (self.sync_bufferEndIdx.value, canula)
-      print "   setting self.sync_trig_buf[%d] = %d" % (self.sync_bufferEndIdx.value, trig)
+       
       self.sync_time_buf[self.sync_bufferEndIdx.value] = t_stamp
       self.sync_canula_buf[self.sync_bufferEndIdx.value] = canula
       #self.sync_o2_buf[self.sync_bufferEndIdx.value] = o2
@@ -149,9 +156,17 @@ class TimedDataFetcher:
       #self.sync_ecg_buf[self.sync_bufferEndIdx.value] = ecg
       #self.sync_temp_buf[self.sync_bufferEndIdx.value = temp
       self.sync_trig_buf[self.sync_bufferEndIdx.value] = trig
+      
+      print "   setting self.sync_time_buf[%d] = %d (verify %d)" % (self.sync_bufferEndIdx.value, t_stamp,self.sync_time_buf[self.sync_bufferEndIdx.value])
+      print "   setting self.sync_canula_buf[%d] = %d (verify %d)" % (self.sync_bufferEndIdx.value, canula,self.sync_canula_buf[self.sync_bufferEndIdx.value])
+      print "   setting self.sync_trig_buf[%d] = %d (verify %d)" % (self.sync_bufferEndIdx.value, trig, self.sync_trig_buf[self.sync_bufferEndIdx.value])
+      
 
       # Write to csvfile
-      #self.csvwriter.writerow([t_stamp,canula,o2,n2,hp,ecg,temp,trig])
+      #self.csvwriter.writerow([t_stamp,canula,o2,n2,hp,ecg,temp,
+      
+      self.sizeLock.release()
+      
       print "FETCHED NEW DATA."
       time.sleep(self.FETCHPERIOD) 
       

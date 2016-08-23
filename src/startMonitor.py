@@ -19,8 +19,8 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.setWindowTitle("Duke Animal Monitor v" + VERSION_STRING)
         
         # CONSTANTS
-        self.MIN_DATA_FETCH_PERIOD = 5
-        self.MIN_PLOT_UPDATE_PERIOD = 5 # A little more than 60Hz
+        self.MIN_DATA_FETCH_PERIOD = 1
+        self.MIN_PLOT_UPDATE_PERIOD = 3 # A little more than 60Hz
         self.PLOT_TIME_RANGE = 10 # Total seconds of display
         self.QUEUE_SIZE = int(round(2*self.PLOT_TIME_RANGE/self.MIN_DATA_FETCH_PERIOD))
         self.TIME_SHIFT_PCT = 0.9
@@ -160,7 +160,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         elapsed_time = time.time() - self.start_time
           
         # Under lock, find how much data we have to read
-        self.dataFetcher.lock.acquire()
+        self.dataFetcher.indexLock.acquire()
         nDataToRead = np.int32(self.dataFetcher.sync_bufferLength.value);
         lastIdx = self.dataFetcher.sync_bufferEndIdx.value
         endRead = lastIdx + 1
@@ -174,7 +174,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         print "   lastIdx = %d" % (lastIdx)
         print "   endRead = %d" % (endRead)
         print "   stopReading = %d" % (stopReading)
-        self.dataFetcher.lock.release()
+        self.dataFetcher.indexLock.release()
         
         # We can now copy from the buffer safely.
         if(nDataToRead > 0):
@@ -214,13 +214,13 @@ class DataMonitoringWindow(QtGui.QWidget):
               copyIdx += 1
           
           # Data is copied, so move pointer to free up buffer space under lock
-          self.dataFetcher.lock.acquire()
+          self.dataFetcher.indexLock.acquire()
           print "   Reseting start of buffer from %d to %d (alternative = %d)" % (self.dataFetcher.sync_bufferStartIdx.value, endRead, stopReading)
           print "   Reseting buffer length from %d to %d" % (self.dataFetcher.sync_bufferLength.value, self.dataFetcher.sync_bufferLength.value - nDataToRead)
           self.dataFetcher.sync_bufferStartIdx.value = endRead
           self.dataFetcher.sync_bufferLength.value = self.dataFetcher.sync_bufferLength.value - nDataToRead 
           #self.dataFetcher.sync_bufferFull.value = 0
-          self.dataFetcher.lock.release()
+          self.dataFetcher.indexLock.release()
     
           # Now we can take all the time we want to plot the data; the 
           # fetching process will keep taking new data while this slow plot 
