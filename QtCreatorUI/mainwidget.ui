@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>560</width>
+    <width>807</width>
     <height>488</height>
    </rect>
   </property>
@@ -34,7 +34,7 @@
   <property name="styleSheet">
    <string notr="true">background-color: rgb(0, 0, 0);
 color: rgb(255, 255, 255);
-font: 10pt &quot;Droid Sans&quot;;</string>
+font: 10pt &quot;Droid Sans Mono&quot;;</string>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout_2">
    <item>
@@ -116,8 +116,8 @@ font: 10pt &quot;Droid Sans&quot;;</string>
             <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Droid Sans'; font-size:10pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p align=&quot;right&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Sampling Frequency:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Droid Sans Mono'; font-size:10pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p align=&quot;right&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Droid Sans';&quot;&gt;Sampling Frequency:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
           </widget>
          </item>
@@ -262,8 +262,8 @@ alternate-background-color: rgb(179, 178, 178);</string>
             <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Droid Sans'; font-size:10pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p align=&quot;right&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Plot Refresh Period:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Droid Sans Mono'; font-size:10pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p align=&quot;right&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Droid Sans';&quot;&gt;Plot Refresh Period:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
           </widget>
          </item>
@@ -369,15 +369,15 @@ p, li { white-space: pre-wrap; }
          </property>
          <property name="font">
           <font>
-           <family>Droid Sans</family>
-           <pointsize>12</pointsize>
+           <family>Droid Sans Mono</family>
+           <pointsize>13</pointsize>
            <weight>50</weight>
            <italic>false</italic>
            <bold>false</bold>
           </font>
          </property>
          <property name="styleSheet">
-          <string notr="true">font: 12pt &quot;Droid Sans&quot;;</string>
+          <string notr="true">font: 13pt &quot;Droid Sans Mono&quot;;</string>
          </property>
          <property name="frameShape">
           <enum>QFrame::NoFrame</enum>
@@ -421,7 +421,7 @@ p, li { white-space: pre-wrap; }
          </property>
          <property name="styleSheet">
           <string notr="true">color: rgb(255, 255, 0);
-font: 12pt &quot;Monospace&quot;;</string>
+font: 13pt &quot;Droid Sans Mono&quot;;</string>
          </property>
          <property name="frameShape">
           <enum>QFrame::NoFrame</enum>
@@ -437,9 +437,6 @@ font: 12pt &quot;Monospace&quot;;</string>
          </property>
          <property name="horizontalScrollBarPolicy">
           <enum>Qt::ScrollBarAlwaysOff</enum>
-         </property>
-         <property name="sizeAdjustPolicy">
-          <enum>QAbstractScrollArea::AdjustIgnored</enum>
          </property>
          <property name="plainText">
           <string>Nitrogen
@@ -469,8 +466,8 @@ P: 0.0 psi  V: 0.01 mL</string>
          </property>
          <property name="font">
           <font>
-           <family>Monospace</family>
-           <pointsize>12</pointsize>
+           <family>Droid Sans Mono</family>
+           <pointsize>13</pointsize>
            <weight>50</weight>
            <italic>false</italic>
            <bold>false</bold>
@@ -478,7 +475,7 @@ P: 0.0 psi  V: 0.01 mL</string>
          </property>
          <property name="styleSheet">
           <string notr="true">color: rgb(85, 255, 0);
-font: 12pt &quot;Monospace&quot;;</string>
+font: 13pt &quot;Droid Sans Mono&quot;;</string>
          </property>
          <property name="frameShape">
           <enum>QFrame::NoFrame</enum>
@@ -494,9 +491,6 @@ font: 12pt &quot;Monospace&quot;;</string>
          </property>
          <property name="horizontalScrollBarPolicy">
           <enum>Qt::ScrollBarAlwaysOff</enum>
-         </property>
-         <property name="sizeAdjustPolicy">
-          <enum>QAbstractScrollArea::AdjustIgnored</enum>
          </property>
          <property name="plainText">
           <string>Oxygen
@@ -529,7 +523,7 @@ P: 0.0 psi  V: 0.01 mL</string>
          </property>
          <property name="styleSheet">
           <string notr="true">color: rgb(255, 85, 0);
-font: 12pt &quot;Monospace&quot;;</string>
+font: 13pt &quot;Droid Sans Mono&quot;;</string>
          </property>
          <property name="frameShape">
           <enum>QFrame::NoFrame</enum>
@@ -545,9 +539,6 @@ font: 12pt &quot;Monospace&quot;;</string>
          </property>
          <property name="horizontalScrollBarPolicy">
           <enum>Qt::ScrollBarAlwaysOff</enum>
-         </property>
-         <property name="sizeAdjustPolicy">
-          <enum>QAbstractScrollArea::AdjustIgnored</enum>
          </property>
          <property name="plainText">
           <string>HP Gas
@@ -577,16 +568,15 @@ P: 0.0 psi  V: 0.01 mL</string>
          </property>
          <property name="font">
           <font>
-           <family>Monospace</family>
-           <pointsize>12</pointsize>
+           <family>Droid Sans Mono</family>
+           <pointsize>13</pointsize>
            <weight>50</weight>
            <italic>false</italic>
            <bold>false</bold>
           </font>
          </property>
          <property name="styleSheet">
-          <string notr="true">font: 12pt &quot;Monospace&quot;;
-color:rgb(255,255,255);</string>
+          <string notr="true">font: 13pt &quot;Droid Sans Mono&quot;;</string>
          </property>
          <property name="frameShape">
           <enum>QFrame::NoFrame</enum>
