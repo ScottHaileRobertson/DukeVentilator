@@ -11,6 +11,7 @@ class TimedDataFetcher:
     self.BUFFERSIZE = 20000
     self.FETCHPERIOD = fetchperiod
     self.isFetching = False
+    
     # Open SPI bus
     self.spi = spidev.SpiDev()
     self.spi.open(0,0)

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file '../QtCreatorUI/mainwidget.ui'
 #
-# Created: Wed Aug 24 11:34:55 2016
+# Created: Wed Aug 24 13:11:23 2016
 #      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -179,6 +179,29 @@ class Ui_MainWidget(object):
         self.modeText.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.modeText.setObjectName(_fromUtf8("modeText"))
         self.testVertLayout.addWidget(self.modeText)
+        self.canulaText = QtGui.QPlainTextEdit(MainWidget)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.canulaText.sizePolicy().hasHeightForWidth())
+        self.canulaText.setSizePolicy(sizePolicy)
+        self.canulaText.setMinimumSize(QtCore.QSize(250, 0))
+        self.canulaText.setMaximumSize(QtCore.QSize(250, 125))
+        font = QtGui.QFont()
+        font.setFamily(_fromUtf8("Droid Sans Mono"))
+        font.setPointSize(13)
+        font.setBold(False)
+        font.setItalic(False)
+        font.setWeight(50)
+        self.canulaText.setFont(font)
+        self.canulaText.setStyleSheet(_fromUtf8("font: 13pt \"Droid Sans Mono\";"))
+        self.canulaText.setFrameShape(QtGui.QFrame.NoFrame)
+        self.canulaText.setFrameShadow(QtGui.QFrame.Plain)
+        self.canulaText.setLineWidth(0)
+        self.canulaText.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.canulaText.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.canulaText.setObjectName(_fromUtf8("canulaText"))
+        self.testVertLayout.addWidget(self.canulaText)
         self.nitrogenText = QtGui.QPlainTextEdit(MainWidget)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
@@ -238,29 +261,6 @@ class Ui_MainWidget(object):
         self.hpText.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.hpText.setObjectName(_fromUtf8("hpText"))
         self.testVertLayout.addWidget(self.hpText)
-        self.canulaText = QtGui.QPlainTextEdit(MainWidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Minimum)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.canulaText.sizePolicy().hasHeightForWidth())
-        self.canulaText.setSizePolicy(sizePolicy)
-        self.canulaText.setMinimumSize(QtCore.QSize(250, 0))
-        self.canulaText.setMaximumSize(QtCore.QSize(250, 125))
-        font = QtGui.QFont()
-        font.setFamily(_fromUtf8("Droid Sans Mono"))
-        font.setPointSize(13)
-        font.setBold(False)
-        font.setItalic(False)
-        font.setWeight(50)
-        self.canulaText.setFont(font)
-        self.canulaText.setStyleSheet(_fromUtf8("font: 13pt \"Droid Sans Mono\";"))
-        self.canulaText.setFrameShape(QtGui.QFrame.NoFrame)
-        self.canulaText.setFrameShadow(QtGui.QFrame.Plain)
-        self.canulaText.setLineWidth(0)
-        self.canulaText.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.canulaText.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.canulaText.setObjectName(_fromUtf8("canulaText"))
-        self.testVertLayout.addWidget(self.canulaText)
         spacerItem2 = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         self.testVertLayout.addItem(spacerItem2)
         self.horizontalLayout_8.addLayout(self.testVertLayout)
@@ -285,15 +285,15 @@ class Ui_MainWidget(object):
 "<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Droid Sans\';\">Plot Refresh Period:</span></p></body></html>", None))
         self.fastUpdatePeriod.setSuffix(_translate("MainWidget", " sec", None))
         self.modeText.setPlainText(_translate("MainWidget", "Mode: ", None))
+        self.canulaText.setPlainText(_translate("MainWidget", "Canula\n"
+"Pmax: 0.0 cmH20\n"
+"Pmin: 0.0 cmH20\n"
+"TV  : 0.00 mL", None))
         self.nitrogenText.setPlainText(_translate("MainWidget", "Nitrogen\n"
 "P: 0.0 psi  V: 0.01 mL", None))
         self.oxygenText.setPlainText(_translate("MainWidget", "Oxygen\n"
 "P: 0.0 psi  V: 0.01 mL", None))
         self.hpText.setPlainText(_translate("MainWidget", "HP Gas\n"
 "P: 0.0 psi  V: 0.01 mL", None))
-        self.canulaText.setPlainText(_translate("MainWidget", "Canula\n"
-"Pmax: 0.0 cmH20\n"
-"Pmin: 0.0 cmH20\n"
-"TV  : 0.00 mL", None))
 
 from pyqtgraph import PlotWidget

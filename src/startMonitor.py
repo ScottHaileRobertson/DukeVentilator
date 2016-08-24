@@ -58,6 +58,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.slow_time_queue = []
         self.slow_minPressure_queue = []
         self.slow_maxPressure_queue = []
+        self.slow_tidalVolume_queue = []
         
         self.ui.fastUpdatePeriod.valueChanged.connect(self.updatePlotTimeRange)
         self.ui.slowUpdatePeriod.valueChanged.connect(self.updateSlowPlotRefreshRate)
@@ -65,7 +66,8 @@ class DataMonitoringWindow(QtGui.QWidget):
         # Initialize graphs
         self.ui.pressurePlot.setMouseEnabled(x=False, y=True)
         self.ui.pressurePlot.enableAutoRange(x=False,y=True)
-        self.ui.pressurePlot.setLabel('left', "Pressure", units='psi')
+        self.ui.pressurePlot.setLabel('left', "Canula Pressure", units='cmH20')
+        self.ui.pressurePlot.getAxis('left').enableAutoSIPrefix(False)
         self.ui.pressurePlot.setLabel('bottom', "Time", units='sec')
         self.minXlim = 0
         self.updatePlotTimeRange()
@@ -84,19 +86,36 @@ class DataMonitoringWindow(QtGui.QWidget):
            pen=self.triggerPen,bounds=None) for i in range(self.MAX_TRIGGERS_DISP)]
         self.triggerIdx = -1;
         for i in range(self.MAX_TRIGGERS_DISP):
+          #self.triggerLines[i].setValue(i)
           self.ui.pressurePlot.addItem(self.triggerLines[i],ignoreBounds=True)
         
-        # Initialize Min and Max pressure lines
-        self.minPressureLine = pg.PlotCurveItem(x=[],y=[], \
-           pen=pg.mkPen({'color': "FF0"}),antialias=True)
-        self.ui.vitalsPlot.addItem(self.minPressureLine)
-        self.maxPressureLine = pg.PlotCurveItem(x=[],y=[], \
-           pen=pg.mkPen({'color': "5F0"}),antialias=True)
-        self.ui.vitalsPlot.addItem(self.maxPressureLine)
-        self.ui.vitalsPlot.setLabel('bottom', "Time", units='sec')
-        self.ui.vitalsPlot.setLabel('left', "Pressure", units='psi')
+        # Initialize Min and Max pressure axis
+        self.pressureSlowPlot = self.ui.vitalsPlot.plotItem
+        self.pressureSlowPlot.getAxis('left').setLabel("Canula Pressure", units='cmH20')
+        self.pressureSlowPlot.getAxis('left').enableAutoSIPrefix(False)
+        #self.pressureSlowPlot.showAxis('right')
+                
+        # Add tidal volume axis
+        #self.tidalVolumeSlowPlot = pg.ViewBox()
+        #self.pressureSlowPlot.scene().addItem(self.tidalVolumeSlowPlot)
+        #self.pressureSlowPlot.getAxis('right').linkToView(self.tidalVolumeSlowPlot)
+        #self.tidalVolumeSlowPlot.setXLink(self.pressureSlowPlot)
+        #self.pressureSlowPlot.getAxis('right').setLabel("Tidal Volume", units='mL')
         
-        self.ui.pressurePlot.show()
+        #self.updateViews();
+        #self.pressureSlowPlot.vb.sigResized.connect(self.updateViews)
+        
+        # Add empty lines
+        self.minPressureLine = pg.PlotCurveItem(x=[],y=[], \
+           pen=pg.mkPen({'color': "FFF"}),antialias=True)
+        self.maxPressureLine = pg.PlotCurveItem(x=[],y=[], \
+           pen=pg.mkPen({'color': "FFF"}),antialias=True)
+        #self.tidalVolumeLine = pg.PlotCurveItem(x=[0,1],y=[1,0], \
+        #   pen=pg.mkPen({'color': "FFF"}),antialias=True)
+        self.pressureSlowPlot.addItem(self.minPressureLine)
+        self.pressureSlowPlot.addItem(self.maxPressureLine)
+        #self.tidalVolumeSlowPlot.addItem(self.tidalVolumeLine)
+        
         
         # Setup dynamic plotting process
         self.isGraphing = False
@@ -112,7 +131,12 @@ class DataMonitoringWindow(QtGui.QWidget):
         GPIO.add_event_detect(13, GPIO.BOTH, callback=self.triggerChanged, bouncetime=500)
         
         self.oxygenModeOn = 0 #GPIO.input(5)
-
+        
+  
+    #def updateViews(self):
+    #  self.tidalVolumeSlowPlot.setGeometry(self.pressureSlowPlot.sceneBoundingRect())
+    #  self.tidalVolumeSlowPlot.linkedViewChanged(self.pressureSlowPlot.vb, self.tidalVolumeSlowPlot.XAxis)
+      
     def triggerChanged(self,chan):
        # Update next trigger line
        trig_time = time.time() - self.start_time
@@ -122,7 +146,7 @@ class DataMonitoringWindow(QtGui.QWidget):
        self.triggerLines[i].setValue(trig_time)
        
     def hpVsO2Changed(self,chan):
-       #self.oxygenModeOn = GPIO.input(5);
+       self.oxygenModeOn = GPIO.input(5);
        if(self.oxygenModeOn):
          mode_string = "Mode: Nitrogen & Oxygen"
        else:
@@ -274,18 +298,24 @@ class DataMonitoringWindow(QtGui.QWidget):
             self.slow_time_queue.append(elapsed_time)
             self.slow_minPressure_queue.append(min_val)
             self.slow_maxPressure_queue.append(max_val)
+            self.slow_tidalVolume_queue.append(tidal_vol)
             self.minPressureLine.setData(self.slow_time_queue,self.slow_minPressure_queue)
             self.maxPressureLine.setData(self.slow_time_queue,self.slow_maxPressure_queue)
+            #self.tidalVolumeLine.setData(self.slow_time_queue,self.slow_tidalVolume_queue)
+            #print "TIDAL VOLS:", self.slow_tidalVolume_queue
             
             self.ui.nitrogenText.setPlainText("Nitrogen\nP: %3.1f psi  V: %4.2f mL" % (nitrogen_pressure,nitrogen_volume)) 
             self.ui.oxygenText.setPlainText("Oxygen\nP: %3.1f psi  V: %4.2f mL" % (oxygen_pressure,oxygen_volume)) 
             self.ui.hpText.setPlainText("HP Gas\nP: %3.1f psi  V: %4.2f mL" % (hpGas_pressure,hpGas_volume)) 
             
             self.ui.canulaText.setPlainText("Canula\nPmax: %3.1f cmH20\nPmin: %3.1f cmH20\nTV  : %4.2f mL" % (max_val, min_val,tidal_vol)) 
+                
+                
                     
     def closeEvent(self, ce):
         self.stopGraphing()
         self.dataFetcher.stopFetching()    
+        
 
 ## Start Qt event loop unless running in interactive mode.
 if __name__ == '__main__':
