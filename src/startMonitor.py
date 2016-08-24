@@ -6,8 +6,7 @@ from mainwidget import Ui_MainWidget
 import datafetcher as df
 import multiprocessing as mp 
 import time
-#import RPi.GPIO as GPIO
-#from scipy.interpolate import *
+import RPi.GPIO as GPIO
 
 # Version
 VERSION_STRING = "1.0"
@@ -30,7 +29,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.NEXT_TEXT_UPDATE = 1
         self.SLOW_UPDATE_PERIOD = 5
         self.NEXT_SLOW_UPDATE = 1 
-        self.MAX_TRIGGERS_DISP = 200
+        self.MAX_TRIGGERS_DISP = 20
         
         canula_cal = np.genfromtxt('canula_calibration.csv', delimiter=',')
         canula_cal_raw = canula_cal[:,0]
@@ -54,7 +53,6 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.canula_queue = np.zeros(self.QUEUE_SIZE)
         #self.ecg_queue = np.zeros(self.QUEUE_SIZE)
         #self.temp_queue = np.zeros(self.QUEUE_SIZE)
-        self.trig_queue = np.zeros(self.QUEUE_SIZE)
 
         # Setup for slow plot data
         self.slow_time_queue = []
@@ -82,11 +80,11 @@ class DataMonitoringWindow(QtGui.QWidget):
         
         # Initialize a bunch of lightweight trigger lines
         self.triggerPen = pen=pg.mkPen({'color': "F0F"})
-        self.triggerLines = [ pg.PlotCurveItem(x=[],y=[], \
-           pen=self.triggerPen,antialias=True) for i in range(self.MAX_TRIGGERS_DISP)]
+        self.triggerLines = [ pg.InfiniteLine(pos=-1,angle=90,movable=False, \
+           pen=self.triggerPen,bounds=None) for i in range(self.MAX_TRIGGERS_DISP)]
         self.triggerIdx = -1;
-        #for i in range(self.MAX_TRIGGERS_DISP):
-          #self.ui.pressurePlot.addItem(self.triggerLines(i))
+        for i in range(self.MAX_TRIGGERS_DISP):
+          self.ui.pressurePlot.addItem(self.triggerLines[i],ignoreBounds=True)
         
         # Initialize Min and Max pressure lines
         self.minPressureLine = pg.PlotCurveItem(x=[],y=[], \
@@ -107,11 +105,11 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.timer.start(self.MIN_PLOT_UPDATE_PERIOD)  
         
         # Set GPIO mode to board so things go smoothly with RPi upgrades
-        #GPIO.setmode(GPIO.BCM)
-        #GPIO.setup(5, GPIO.IN)
-        #GPIO.add_event_detect(5, GPIO.BOTH, callback=self.hpVsO2Changed, bouncetime=500)
-        #GPIO.setup(13, GPIO.IN)
-        #GPIO.add_event_detect(13, GPIO.BOTH, callback=self.triggerChanged, bouncetime=500)
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(5, GPIO.IN)
+        GPIO.add_event_detect(5, GPIO.BOTH, callback=self.hpVsO2Changed, bouncetime=500)
+        GPIO.setup(13, GPIO.IN)
+        GPIO.add_event_detect(13, GPIO.BOTH, callback=self.triggerChanged, bouncetime=500)
         
         self.oxygenModeOn = 0 #GPIO.input(5)
 
@@ -121,7 +119,7 @@ class DataMonitoringWindow(QtGui.QWidget):
        self.triggerIdx += 1
        while (self.triggerIdx >= self.MAX_TRIGGERS_DISP):
          self.triggerIdx -= self.MAX_TRIGGERS_DISP
-       self.triggerLines(self.triggerIdx).setData([trig_time, trig_time],[-10, 100])
+       self.triggerLines[i].setValue(trig_time)
        
     def hpVsO2Changed(self,chan):
        #self.oxygenModeOn = GPIO.input(5);
@@ -148,22 +146,16 @@ class DataMonitoringWindow(QtGui.QWidget):
         new_canula_queue = np.zeros(new_queue_size)
         #new_ecg_queue = np.zeros(new_queue_size)
         #new_temp_queue = np.zeros(new_queue_size)
-        new_trig_queue = np.zeros(new_queue_size)
         
         new_time_queue[0:(copySize-1)] = self.time_queue[0:(copySize-1)] 
         new_canula_queue[0:(copySize-1)] = self.canula_queue[0:(copySize-1)]  
         #new_ecg_queue[0:(copySize-1)] = self.ecg_queue[0:(copySize-1)] 
         #new_temp_queue[0:(copySize-1)] = self.temp_queue[0:(copySize-1)] 
-        new_trig_queue[0:(copySize-1)] = self.trig_queue[0:(copySize-1)] 
          
         self.time_queue = new_time_queue
         self.canula_queue = new_canula_queue
-        #self.o2_queue = new_o2_queue
-        #self.n2_queue = new_n2_queue
-        #self.hp_queue = new_hp_queue
         #self.ecg_queue = new_ecg_queue
         #self.temp_queue = new_temp_queue
-        self.trig_queue = new_trig_queue
         
         # Update buffer size
         self.QUEUE_SIZE = new_queue_size
@@ -212,35 +204,19 @@ class DataMonitoringWindow(QtGui.QWidget):
           copyIdx = 0
           for i in range(startRead,stopReading): 
               self.time_queue[copyIdx] = self.dataFetcher.sync_time_buf[i]
-              temp = self.dataFetcher.sync_canula_buf[i]
-              
-                
-
               self.canula_queue[copyIdx] = self.canulaSlope*self.dataFetcher.sync_canula_buf[i]+self.canulaIntercept
-              
-              #self.o2_queue[copyIdx] = self.dataFetcher.sync_o2_buf[i]
-              #self.n2_queue[copyIdx] = self.dataFetcher.sync_n2_buf[i]
-              #self.hp_queue[copyIdx] = self.dataFetcher.sync_hp_buf[i]
               #self.ecg_queue[copyIdx] = self.dataFetcher.sync_ecg_buf[i]
               #self.temp_queue[copyIdx] = self.dataFetcher.sync_temp_buf[i]
-              #self.trig_queue[copyIdx] = self.dataFetcher.sync_trig_buf[i]
               copyIdx += 1
         
           # In case data has wrapped... read the wrapped data too
           if(endRead <= startRead):
             for i in range(0,endRead):
-              
               self.time_queue[copyIdx] = self.dataFetcher.sync_time_buf[i]
               self.canula_queue[copyIdx] = self.canulaSlope*self.dataFetcher.sync_canula_buf[i]+self.canulaIntercept
-              #self.o2_queue[copyIdx] = self.dataFetcher.sync_o2_buf[i]
-              #self.n2_queue[copyIdx] = self.dataFetcher.sync_n2_buf[i]
-              #self.hp_queue[copyIdx] = self.dataFetcher.sync_hp_buf[i]
               #self.ecg_queue[copyIdx] = self.dataFetcher.sync_ecg_buf[i]
               #self.temp_queue[copyIdx] = self.dataFetcher.sync_temp_buf[i]
-              #self.trig_queue[copyIdx] = self.dataFetcher.sync_trig_buf[i]
               copyIdx += 1
-          
-           
           
           # Data is copied, so move pointer to free up buffer space under lock
           self.dataFetcher.indexLock.acquire()
@@ -257,12 +233,8 @@ class DataMonitoringWindow(QtGui.QWidget):
           # Roll data to put newest data last
           self.time_queue = np.roll(self.time_queue,-nDataToRead)
           self.canula_queue = np.roll(self.canula_queue,-nDataToRead)
-          #self.o2_queue = np.roll(self.o2_queue,-nDataToRead)
-          #self.n2_queue = np.roll(self.n2_queue,-nDataToRead)
-          #self.hp_queue = np.roll(self.hp_queue,-nDataToRead)
           #self.ecg_queue = np.roll(self.ecg_queue,-nDataToRead)
           #self.temp_queue = np.roll(self.temp_queue,-nDataToRead)
-          #self.trig_queue = np.roll(self.trig_queue,-nDataToRead)   
                 
           # Show the new data
           self.pressureLine.setData(self.time_queue,self.canula_queue)
@@ -304,8 +276,6 @@ class DataMonitoringWindow(QtGui.QWidget):
             self.slow_maxPressure_queue.append(max_val)
             self.minPressureLine.setData(self.slow_time_queue,self.slow_minPressure_queue)
             self.maxPressureLine.setData(self.slow_time_queue,self.slow_maxPressure_queue)
-            
-            
             
             self.ui.nitrogenText.setPlainText("Nitrogen\nP: %3.1f psi  V: %4.2f mL" % (nitrogen_pressure,nitrogen_volume)) 
             self.ui.oxygenText.setPlainText("Oxygen\nP: %3.1f psi  V: %4.2f mL" % (oxygen_pressure,oxygen_volume)) 

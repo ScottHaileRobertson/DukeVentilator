@@ -3,7 +3,7 @@ import time
 import multiprocessing as mp 
 import numpy as np
 import csv
-#import spidev
+import spidev
     
 class TimedDataFetcher:
   def __init__(self, fetchperiod):
@@ -12,27 +12,19 @@ class TimedDataFetcher:
     self.FETCHPERIOD = fetchperiod
     self.isFetching = False
     # Open SPI bus
-    #self.spi = spidev.SpiDev()
-    #self.spi.open(0,0)
+    self.spi = spidev.SpiDev()
+    self.spi.open(0,0)
     
     # Create lock to prevent clashes between graphing/fetching processes
     self.indexLock = mp.Lock()
-
-    # Create dummy csv file
-    #self.csvfile = []
-    #self.csvwriter = []
 
     # Setup an array to buffer values that are read off the pressure monitors 
     self.indexLock.acquire()
     
     self.sync_time_buf = mp.Array('d',range(self.BUFFERSIZE))
     self.sync_canula_buf = mp.Array('d',range(self.BUFFERSIZE))
-    #self.sync_o2_buf = mp.Array('d',range(self.BUFFERSIZE))
-    #self.sync_n2_buf = mp.Array('d',range(self.BUFFERSIZE))
-    #self.sync_hp_buf = mp.Array('d',range(self.BUFFERSIZE))
     #self.sync_ecg_buf = mp.Array('d',range(self.BUFFERSIZE))
     #self.sync_temp_buf = mp.Array('d',range(self.BUFFERSIZE))
-    #self.sync_trig_buf = mp.Array('d',range(self.BUFFERSIZE))
     
     self.sync_bufferStartIdx = mp.Value('I', 0)
     self.sync_bufferLength = mp.Value('I', 0)
@@ -53,9 +45,9 @@ class TimedDataFetcher:
     self.indexLock.release()      
           
   def getDataFromChannel(self, channel):
-      #adc = self.spi.xfer2([1,(8+channel)<<4,0]) 
-      #return ((adc[1]&3) << 8) + adc[2]
-      return 100*np.random.random_sample()
+      adc = self.spi.xfer2([1,(8+channel)<<4,0]) 
+      return ((adc[1]&3) << 8) + adc[2]
+      #return 100*np.random.random_sample()
       
   def fetchData(self):  
     # Fetch new data until the end of time, or when the user closes the window
@@ -65,10 +57,6 @@ class TimedDataFetcher:
     
       # Fetch new data
       canula = self.getDataFromChannel(0)
-      #o2 = self.getDataFromChannel(1)
-      #n2 = self.getDataFromChannel(2)
-      #hp = self.getDataFromChannel(3)
-      #trig = self.getDataFromChannel(4)
       #ecg = self.getDataFromChannel(6)
       #temp = self.getDataFromChannel(5)
       
@@ -92,12 +80,8 @@ class TimedDataFetcher:
        
       self.sync_time_buf[self.sync_bufferEndIdx.value] = t_stamp
       self.sync_canula_buf[self.sync_bufferEndIdx.value] = canula
-      #self.sync_o2_buf[self.sync_bufferEndIdx.value] = o2
-      #self.sync_n2_buf[self.sync_bufferEndIdx.value] = n2
-      #self.sync_hp_buf[self.sync_bufferEndIdx.value] = hp
       #self.sync_ecg_buf[self.sync_bufferEndIdx.value] = ecg
       #self.sync_temp_buf[self.sync_bufferEndIdx.value = temp
-      #self.sync_trig_buf[self.sync_bufferEndIdx.value] = trig
       
       # Write to csvfile
       #self.csvwriter.writerow([t_stamp,canula,o2,n2,hp,ecg,temp,
