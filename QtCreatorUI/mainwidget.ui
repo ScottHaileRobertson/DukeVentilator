@@ -315,10 +315,10 @@ p, li { white-space: pre-wrap; }
             <double>0.500000000000000</double>
            </property>
            <property name="maximum">
-            <double>60.000000000000000</double>
+            <double>20.000000000000000</double>
            </property>
            <property name="value">
-            <double>5.000000000000000</double>
+            <double>4.000000000000000</double>
            </property>
           </widget>
          </item>
@@ -348,7 +348,7 @@ p, li { white-space: pre-wrap; }
         <number>0</number>
        </property>
        <item>
-        <widget class="QPlainTextEdit" name="maxPressureText">
+        <widget class="QPlainTextEdit" name="modeText">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
            <horstretch>0</horstretch>
@@ -357,73 +357,27 @@ p, li { white-space: pre-wrap; }
          </property>
          <property name="minimumSize">
           <size>
-           <width>170</width>
+           <width>250</width>
            <height>0</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
-           <width>170</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="styleSheet">
-          <string notr="true">color: rgb(85, 255, 0);
-font: 75 12pt &quot;Droid Sans&quot;;</string>
-         </property>
-         <property name="frameShape">
-          <enum>QFrame::NoFrame</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Plain</enum>
-         </property>
-         <property name="lineWidth">
-          <number>0</number>
-         </property>
-         <property name="verticalScrollBarPolicy">
-          <enum>Qt::ScrollBarAlwaysOff</enum>
-         </property>
-         <property name="horizontalScrollBarPolicy">
-          <enum>Qt::ScrollBarAlwaysOff</enum>
-         </property>
-         <property name="plainText">
-          <string>Max Pres:
-</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPlainTextEdit" name="minPressureText">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>170</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>170</width>
-           <height>25</height>
+           <width>250</width>
+           <height>60</height>
           </size>
          </property>
          <property name="font">
           <font>
            <family>Droid Sans</family>
            <pointsize>12</pointsize>
-           <weight>9</weight>
+           <weight>50</weight>
            <italic>false</italic>
            <bold>false</bold>
           </font>
          </property>
          <property name="styleSheet">
-          <string notr="true">font: 75 12pt &quot;Droid Sans&quot;;
-color: rgb(255, 255, 0);</string>
+          <string notr="true">font: 12pt &quot;Droid Sans&quot;;</string>
          </property>
          <property name="frameShape">
           <enum>QFrame::NoFrame</enum>
@@ -441,7 +395,219 @@ color: rgb(255, 255, 0);</string>
           <enum>Qt::ScrollBarAlwaysOff</enum>
          </property>
          <property name="plainText">
-          <string>Min Pres:</string>
+          <string>Mode: </string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPlainTextEdit" name="nitrogenText">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>250</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>250</width>
+           <height>60</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">color: rgb(255, 255, 0);
+font: 12pt &quot;Monospace&quot;;</string>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::NoFrame</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Plain</enum>
+         </property>
+         <property name="lineWidth">
+          <number>0</number>
+         </property>
+         <property name="verticalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="horizontalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="sizeAdjustPolicy">
+          <enum>QAbstractScrollArea::AdjustIgnored</enum>
+         </property>
+         <property name="plainText">
+          <string>Nitrogen
+P: 0.0 psi  V: 0.01 mL</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPlainTextEdit" name="oxygenText">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>250</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>250</width>
+           <height>60</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <family>Monospace</family>
+           <pointsize>12</pointsize>
+           <weight>50</weight>
+           <italic>false</italic>
+           <bold>false</bold>
+          </font>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">color: rgb(85, 255, 0);
+font: 12pt &quot;Monospace&quot;;</string>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::NoFrame</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Plain</enum>
+         </property>
+         <property name="lineWidth">
+          <number>0</number>
+         </property>
+         <property name="verticalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="horizontalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="sizeAdjustPolicy">
+          <enum>QAbstractScrollArea::AdjustIgnored</enum>
+         </property>
+         <property name="plainText">
+          <string>Oxygen
+P: 0.0 psi  V: 0.01 mL</string>
+         </property>
+         <property name="tabStopWidth">
+          <number>73</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPlainTextEdit" name="hpText">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>250</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>250</width>
+           <height>85</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">color: rgb(255, 85, 0);
+font: 12pt &quot;Monospace&quot;;</string>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::NoFrame</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Plain</enum>
+         </property>
+         <property name="lineWidth">
+          <number>0</number>
+         </property>
+         <property name="verticalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="horizontalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="sizeAdjustPolicy">
+          <enum>QAbstractScrollArea::AdjustIgnored</enum>
+         </property>
+         <property name="plainText">
+          <string>HP Gas
+P: 0.0 psi  V: 0.01 mL</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPlainTextEdit" name="canulaText">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>250</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>250</width>
+           <height>125</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <family>Monospace</family>
+           <pointsize>12</pointsize>
+           <weight>50</weight>
+           <italic>false</italic>
+           <bold>false</bold>
+          </font>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">font: 12pt &quot;Monospace&quot;;
+color:rgb(255,255,255);</string>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::NoFrame</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Plain</enum>
+         </property>
+         <property name="lineWidth">
+          <number>0</number>
+         </property>
+         <property name="verticalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="horizontalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="plainText">
+          <string>Canula
+Pmax: 0.0 cmH20
+Pmin: 0.0 cmH20
+TV  : 0.00 mL</string>
          </property>
         </widget>
        </item>
