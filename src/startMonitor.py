@@ -39,9 +39,12 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.canulaSlope = canula_lin_fit[0]
         self.canulaIntercept = canula_lin_fit[1]
 
-
-        self.regulatorSlope = 0.0085019269
-        self.regulatorIntercept = 0.6856639255
+        regulator_cal = np.genfromtxt('regulator_calibration.csv', delimiter=',')
+        regulator_cal_raw = regulator_cal[:,0]
+        regulator_cal_p = regulator_cal[:,1]
+        regulator_lin_fit = np.polyfit(regulator_cal_raw, regulator_cal_p,1)
+        self.regulatorSlope = regulator_lin_fit[0]
+        self.regulatorIntercept = regulator_lin_fit[0]
         
         # Create data fetching process
         self.dataFetcher = df.TimedDataFetcher(self.MIN_DATA_FETCH_PERIOD)
