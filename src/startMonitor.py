@@ -37,13 +37,15 @@ class DataMonitoringWindow(QtGui.QWidget):
         canula_lin_fit = np.polyfit(canula_cal_raw,canula_cal_p,1)
         self.canulaSlope = canula_lin_fit[0]
         self.canulaIntercept = canula_lin_fit[1]
+        print "CANULA slope=%f intercept=%f" % (self.canulaSlope, self.canulaIntercept)
 
         regulator_cal = np.genfromtxt('regulator_calibration.csv', delimiter=',')
         regulator_cal_raw = regulator_cal[:,0]
         regulator_cal_p = regulator_cal[:,1]
         regulator_lin_fit = np.polyfit(regulator_cal_raw, regulator_cal_p,1)
         self.regulatorSlope = regulator_lin_fit[0]
-        self.regulatorIntercept = regulator_lin_fit[0]
+        self.regulatorIntercept = regulator_lin_fit[1]
+        print "REG slope=%f intercept=%f" % (self.regulatorSlope,self.regulatorIntercept)
         
         # Create data fetching process
         self.dataFetcher = df.TimedDataFetcher(self.MIN_DATA_FETCH_PERIOD)
@@ -143,16 +145,11 @@ class DataMonitoringWindow(QtGui.QWidget):
        self.triggerIdx += 1
        while (self.triggerIdx >= self.MAX_TRIGGERS_DISP):
          self.triggerIdx -= self.MAX_TRIGGERS_DISP
-       self.triggerLines[i].setValue(trig_time)
+       self.triggerLines[self.triggerIdx].setValue(trig_time)
        
     def hpVsO2Changed(self,chan):
        self.oxygenModeOn = GPIO.input(5);
-       if(self.oxygenModeOn):
-         mode_string = "Mode: Nitrogen & Oxygen"
-       else:
-         mode_string = "Mode: HP Gas & Oxygen"
-              
-         self.ui.modeText.setPlainText(mode_string)   
+          
              
     def updateSlowPlotRefreshRate(self):
        self.NEXT_SLOW_UPDATE = self.NEXT_SLOW_UPDATE-self.SLOW_UPDATE_PERIOD+self.ui.slowUpdatePeriod.value()
@@ -309,7 +306,13 @@ class DataMonitoringWindow(QtGui.QWidget):
             self.ui.hpText.setPlainText("HP Gas\nP: %3.1f psi  V: %4.2f mL" % (hpGas_pressure,hpGas_volume)) 
             
             self.ui.canulaText.setPlainText("Canula\nPmax: %3.1f cmH20\nPmin: %3.1f cmH20\nTV  : %4.2f mL" % (max_val, min_val,tidal_vol)) 
-                
+
+            if(self.oxygenModeOn):
+              mode_string = "Mode: Nitrogen & Oxygen"
+            else:
+              mode_string = "Mode: HP Gas & Oxygen"
+              
+            self.ui.modeText.setPlainText(mode_string)    
                 
                     
     def closeEvent(self, ce):
