@@ -31,21 +31,48 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.NEXT_SLOW_UPDATE = 1 
         self.MAX_TRIGGERS_DISP = 20
         
-        canula_cal = np.genfromtxt('canula_calibration.csv', delimiter=',')
-        canula_cal_raw = canula_cal[:,0]
-        canula_cal_p = canula_cal[:,1]
-        canula_lin_fit = np.polyfit(canula_cal_raw,canula_cal_p,1)
-        self.canulaSlope = canula_lin_fit[0]
-        self.canulaIntercept = canula_lin_fit[1]
-        print "CANULA slope=%f intercept=%f" % (self.canulaSlope, self.canulaIntercept)
+        # Read in pressure calibration data
+        canulaP_cal = np.genfromtxt('canulaPressure_calibration.csv', delimiter=',')
+        canulaP_cal_raw = canulaP_cal[:,0]
+        canulaP_cal_p = canulaP_cal[:,1]
+        canulaP_lin_fit = np.polyfit(canulaP_cal_raw,canulaP_cal_p,1)
+        self.canulaPressureSlope = canulaP_lin_fit[0]
+        self.canulaPressureIntercept = canulaP_lin_fit[1]        
+        print "CANULA PRESSURE CALIBRATION: slope=%f intercept=%f" % (self.canulaPressureSlope, self.canulaPressureIntercept)
 
-        regulator_cal = np.genfromtxt('regulator_calibration.csv', delimiter=',')
-        regulator_cal_raw = regulator_cal[:,0]
-        regulator_cal_p = regulator_cal[:,1]
-        regulator_lin_fit = np.polyfit(regulator_cal_raw, regulator_cal_p,1)
-        self.regulatorSlope = regulator_lin_fit[0]
-        self.regulatorIntercept = regulator_lin_fit[1]
-        print "REG slope=%f intercept=%f" % (self.regulatorSlope,self.regulatorIntercept)
+        regulatorP_cal = np.genfromtxt('regulatorPressure_calibration.csv', delimiter=',')
+        regulatorP_cal_raw = regulatorP_cal[:,0]
+        regulatorP_cal_p = regulatorP_cal[:,1]
+        regulatorP_lin_fit = np.polyfit(regulatorP_cal_raw, regulatorP_cal_p,1)
+        self.regulatorPressureSlope = regulatorP_lin_fit[0]
+        self.regulatorPressureIntercept = regulatorP_lin_fit[1]
+        print "REGULATOR PRESSURE CALIBRATION: slope=%f intercept=%f" % (self.regulatorPressureSlope,self.regulatorPressureIntercept)
+        
+        # Read in volume calibration data
+        oxygenV_cal = np.genfromtxt('oxygenVolume_calibration.csv', delimiter=',')
+        oxygenV_cal_raw = oxygenV_cal[:,0]
+        oxygenV_cal_p = oxygenV_cal[:,1]
+        oxygenV_lin_fit = np.polyfit(oxygenV_cal_raw, oxygenV_cal_p,1)
+        self.oxygenVolumeSlope = oxygenV_lin_fit[0]
+        self.oxygenVolumeIntercept = oxygenV_lin_fit[1]
+        print "OXYGEN VOLUME CALIBRATION: slope=%f intercept=%f" % (self.oxygenVolumeSlope, self.oxygenVolumeIntercept)
+        
+        nitrogenV_cal = np.genfromtxt('nitrogenVolume_calibration.csv', delimiter=',')
+        nitrogenV_cal_raw = nitrogenV_cal[:,0]
+        nitrogenV_cal_p = nitrogenV_cal[:,1]
+        nitrogenV_lin_fit = np.polyfit(nitrogenV_cal_raw, nitrogenV_cal_p,1)
+        self.nitrogenVolumeSlope = nitrogenV_lin_fit[0]
+        self.nitrogenVolumeIntercept = nitrogenV_lin_fit[1]
+        print "NITROGEN VOLUME CALIBRATION: slope=%f intercept=%f" % (self.nitrogenVolumeSlope, self.nitrogenVolumeIntercept)
+        
+        hpGasV_cal = np.genfromtxt('hpGasVolume_calibration.csv', delimiter=',')
+        hpGasV_cal_raw = hpGasV_cal[:,0]
+        hpGasV_cal_p = hpGasV_cal[:,1]
+        hpGasV_lin_fit = np.polyfit(hpGasV_cal_raw, hpGasV_cal_p,1)
+        self.hpGasVolumeSlope = hpGasV_lin_fit[0]
+        self.hpGasVolumeIntercept = hpGasV_lin_fit[1]
+        print "HP GAS VOLUME CALIBRATION: slope=%f intercept=%f" % (self.hpGasVolumeSlope, self.hpGasVolumeIntercept)
+        
         
         # Create data fetching process
         self.dataFetcher = df.TimedDataFetcher(self.MIN_DATA_FETCH_PERIOD)
@@ -132,7 +159,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         GPIO.setup(13, GPIO.IN)
         GPIO.add_event_detect(13, GPIO.BOTH, callback=self.triggerChanged, bouncetime=500)
         
-        self.oxygenModeOn = 0 #GPIO.input(5)
+        self.nitrogenModeOn = 0 #GPIO.input(5)
         
   
     #def updateViews(self):
@@ -148,7 +175,7 @@ class DataMonitoringWindow(QtGui.QWidget):
        self.triggerLines[self.triggerIdx].setValue(trig_time)
        
     def hpVsO2Changed(self,chan):
-       self.oxygenModeOn = GPIO.input(5);
+       self.nitrogenModeOn = GPIO.input(5);
           
              
     def updateSlowPlotRefreshRate(self):
@@ -225,7 +252,7 @@ class DataMonitoringWindow(QtGui.QWidget):
           copyIdx = 0
           for i in range(startRead,stopReading): 
               self.time_queue[copyIdx] = self.dataFetcher.sync_time_buf[i]
-              self.canula_queue[copyIdx] = self.canulaSlope*self.dataFetcher.sync_canula_buf[i]+self.canulaIntercept
+              self.canula_queue[copyIdx] = self.canulaPressureSlope*self.dataFetcher.sync_canula_buf[i]+self.canulaPressureIntercept
               #self.ecg_queue[copyIdx] = self.dataFetcher.sync_ecg_buf[i]
               #self.temp_queue[copyIdx] = self.dataFetcher.sync_temp_buf[i]
               copyIdx += 1
@@ -234,7 +261,7 @@ class DataMonitoringWindow(QtGui.QWidget):
           if(endRead <= startRead):
             for i in range(0,endRead):
               self.time_queue[copyIdx] = self.dataFetcher.sync_time_buf[i]
-              self.canula_queue[copyIdx] = self.canulaSlope*self.dataFetcher.sync_canula_buf[i]+self.canulaIntercept
+              self.canula_queue[copyIdx] = self.canulaPressureSlope*self.dataFetcher.sync_canula_buf[i]+self.canulaPressureIntercept
               #self.ecg_queue[copyIdx] = self.dataFetcher.sync_ecg_buf[i]
               #self.temp_queue[copyIdx] = self.dataFetcher.sync_temp_buf[i]
               copyIdx += 1
@@ -274,16 +301,20 @@ class DataMonitoringWindow(QtGui.QWidget):
           max_val = max(self.canula_queue)
           
           # Calculate pressures
-          oxygen_pressure = self.regulatorSlope*self.dataFetcher.getDataFromChannel(1)+self.regulatorIntercept
-          nitrogen_pressure = self.regulatorSlope*self.dataFetcher.getDataFromChannel(2)+self.regulatorIntercept
-          hpGas_pressure = self.regulatorSlope*self.dataFetcher.getDataFromChannel(3)+self.regulatorIntercept
-          
+          oxygen_pressure = self.regulatorPressureSlope*self.dataFetcher.getDataFromChannel(1)+self.regulatorPressureIntercept
+          nitrogen_pressure = self.regulatorPressureSlope*self.dataFetcher.getDataFromChannel(2)+self.regulatorPressureIntercept
+          hpGas_pressure = self.regulatorPressureSlope*self.dataFetcher.getDataFromChannel(3)+self.regulatorPressureIntercept
+        
           # Calculate volumes
-          oxygen_volume = oxygen_pressure
-          nitrogen_volume = nitrogen_pressure
-          hpGas_volume = hpGas_pressure
+          oxygen_volume = oxygen_pressure*self.oxygenVolumeSlope + self.oxygenVolumeIntercept
+          nitrogen_volume = nitrogen_pressure*self.nitrogenVolumeSlope + self.nitrogenVolumeIntercept
+          hpGas_volume = hpGas_pressure*self.hpGasVolumeSlope + self.hpGasVolumeIntercept
           
-          tidal_vol = 0
+          tidal_vol = oxygen_volume
+          if(self.nitrogenModeOn):
+            tidal_vol += nitrogen_volume
+          else:
+            tidal_vol += hpGas_volume
           
           if(elapsed_time > self.NEXT_SLOW_UPDATE):
             while(elapsed_time > self.NEXT_SLOW_UPDATE):
@@ -307,7 +338,7 @@ class DataMonitoringWindow(QtGui.QWidget):
             
             self.ui.canulaText.setPlainText("Canula\nPmax: %3.1f cmH20\nPmin: %3.1f cmH20\nTV  : %4.2f mL" % (max_val, min_val,tidal_vol)) 
 
-            if(self.oxygenModeOn):
+            if(self.nitrogenModeOn):
               mode_string = "Mode: Nitrogen & Oxygen"
             else:
               mode_string = "Mode: HP Gas & Oxygen"

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file '../QtCreatorUI/mainwidget.ui'
 #
-# Created: Wed Aug 24 13:11:23 2016
+# Created: Fri Aug 26 10:50:36 2016
 #      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -68,6 +68,7 @@ class Ui_MainWidget(object):
         self.textBrowser.setSizePolicy(sizePolicy)
         self.textBrowser.setMinimumSize(QtCore.QSize(136, 30))
         self.textBrowser.setMaximumSize(QtCore.QSize(136, 30))
+        self.textBrowser.setStyleSheet(_fromUtf8("font: 9pt \"Droid Sans\";"))
         self.textBrowser.setFrameShape(QtGui.QFrame.NoFrame)
         self.textBrowser.setFrameShadow(QtGui.QFrame.Plain)
         self.textBrowser.setLineWidth(0)
@@ -83,9 +84,9 @@ class Ui_MainWidget(object):
         self.slowUpdatePeriod.setSizePolicy(sizePolicy)
         self.slowUpdatePeriod.setMinimumSize(QtCore.QSize(150, 0))
         self.slowUpdatePeriod.setMaximumSize(QtCore.QSize(150, 16777215))
-        self.slowUpdatePeriod.setStyleSheet(_fromUtf8("background-color: rgb(179, 178, 178);\n"
-"border-color: rgb(0, 0, 0);\n"
-"alternate-background-color: rgb(179, 178, 178);"))
+        self.slowUpdatePeriod.setStyleSheet(_fromUtf8("background-color: rgb(255,255,255);\n"
+"font: 9pt \"Droid Sans\";\n"
+"color: rgb(0, 0, 0);"))
         self.slowUpdatePeriod.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.slowUpdatePeriod.setDecimals(1)
         self.slowUpdatePeriod.setMinimum(0.1)
@@ -122,6 +123,7 @@ class Ui_MainWidget(object):
         self.textEdit.setMinimumSize(QtCore.QSize(136, 30))
         self.textEdit.setMaximumSize(QtCore.QSize(136, 30))
         self.textEdit.setLayoutDirection(QtCore.Qt.RightToLeft)
+        self.textEdit.setStyleSheet(_fromUtf8("font: 9pt \"Droid Sans\";"))
         self.textEdit.setFrameShape(QtGui.QFrame.NoFrame)
         self.textEdit.setFrameShadow(QtGui.QFrame.Plain)
         self.textEdit.setLineWidth(0)
@@ -138,7 +140,9 @@ class Ui_MainWidget(object):
         self.fastUpdatePeriod.setMinimumSize(QtCore.QSize(100, 0))
         self.fastUpdatePeriod.setMaximumSize(QtCore.QSize(100, 16777215))
         self.fastUpdatePeriod.setLayoutDirection(QtCore.Qt.LeftToRight)
-        self.fastUpdatePeriod.setStyleSheet(_fromUtf8("background-color: rgb(179, 178, 178);"))
+        self.fastUpdatePeriod.setStyleSheet(_fromUtf8("background-color: rgb(255,255,255);\n"
+"font: 9pt \"Droid Sans\";\n"
+"color: rgb(0, 0, 0);"))
         self.fastUpdatePeriod.setFrame(True)
         self.fastUpdatePeriod.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.fastUpdatePeriod.setButtonSymbols(QtGui.QAbstractSpinBox.UpDownArrows)
@@ -274,15 +278,15 @@ class Ui_MainWidget(object):
         self.textBrowser.setHtml(_translate("MainWidget", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"
-"</style></head><body style=\" font-family:\'Droid Sans Mono\'; font-size:10pt; font-weight:400; font-style:normal;\">\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Droid Sans\';\">Sampling Frequency:</span></p></body></html>", None))
+"</style></head><body style=\" font-family:\'Droid Sans\'; font-size:9pt; font-weight:400; font-style:normal;\">\n"
+"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt;\">Sampling Frequency:</span></p></body></html>", None))
         self.slowUpdatePeriod.setPrefix(_translate("MainWidget", "1 sample / ", None))
         self.slowUpdatePeriod.setSuffix(_translate("MainWidget", " sec", None))
         self.textEdit.setHtml(_translate("MainWidget", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"
-"</style></head><body style=\" font-family:\'Droid Sans Mono\'; font-size:10pt; font-weight:400; font-style:normal;\">\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Droid Sans\';\">Plot Refresh Period:</span></p></body></html>", None))
+"</style></head><body style=\" font-family:\'Droid Sans\'; font-size:9pt; font-weight:400; font-style:normal;\">\n"
+"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt;\">Plot Refresh Period:</span></p></body></html>", None))
         self.fastUpdatePeriod.setSuffix(_translate("MainWidget", " sec", None))
         self.modeText.setPlainText(_translate("MainWidget", "Mode: ", None))
         self.canulaText.setPlainText(_translate("MainWidget", "Canula\n"

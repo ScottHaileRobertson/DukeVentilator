@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Encoding=UTF-8
+Name=DukeMonitor
+Exec=/home/pi/sketchbook/display/QT4/ScottPythonGUI/startMonitor.py
+Terminal=true
+X-KeepTerminal=true
+Path=/home/pi/sketchbook/display/QT4/ScottPythonGUI/
+Name[en_GB]=Ventilator Monitor
