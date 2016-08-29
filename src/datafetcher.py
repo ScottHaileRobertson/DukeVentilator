@@ -24,7 +24,7 @@ class TimedDataFetcher:
     
     self.sync_time_buf = mp.Array('d',range(self.BUFFERSIZE))
     self.sync_canula_buf = mp.Array('d',range(self.BUFFERSIZE))
-    #self.sync_ecg_buf = mp.Array('d',range(self.BUFFERSIZE))
+    self.sync_ecg_buf = mp.Array('d',range(self.BUFFERSIZE))
     #self.sync_temp_buf = mp.Array('d',range(self.BUFFERSIZE))
     
     self.sync_bufferStartIdx = mp.Value('I', 0)
@@ -58,7 +58,7 @@ class TimedDataFetcher:
     
       # Fetch new data
       canula = self.getDataFromChannel(0)
-      #ecg = self.getDataFromChannel(6)
+      ecg = self.getDataFromChannel(5)
       #temp = self.getDataFromChannel(5)
       
       # Add data to buffer and increment index under lock
@@ -81,7 +81,7 @@ class TimedDataFetcher:
        
       self.sync_time_buf[self.sync_bufferEndIdx.value] = t_stamp
       self.sync_canula_buf[self.sync_bufferEndIdx.value] = canula
-      #self.sync_ecg_buf[self.sync_bufferEndIdx.value] = ecg
+      self.sync_ecg_buf[self.sync_bufferEndIdx.value] = ecg
       #self.sync_temp_buf[self.sync_bufferEndIdx.value = temp
       
       # Write to csvfile

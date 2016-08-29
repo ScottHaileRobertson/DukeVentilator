@@ -80,7 +80,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         # Setup queues for plotting data as all NaNs
         self.time_queue = np.zeros(self.QUEUE_SIZE)
         self.canula_queue = np.zeros(self.QUEUE_SIZE)
-        #self.ecg_queue = np.zeros(self.QUEUE_SIZE)
+        self.ecg_queue = np.zeros(self.QUEUE_SIZE)
         #self.temp_queue = np.zeros(self.QUEUE_SIZE)
 
         # Setup for slow plot data
@@ -155,11 +155,11 @@ class DataMonitoringWindow(QtGui.QWidget):
         # Set GPIO mode to board so things go smoothly with RPi upgrades
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(5, GPIO.IN)
-        GPIO.add_event_detect(5, GPIO.BOTH, callback=self.hpVsO2Changed, bouncetime=500)
+        GPIO.add_event_detect(5, GPIO.BOTH, callback=self.hpVsO2Changed, bouncetime=1)
         GPIO.setup(13, GPIO.IN)
-        GPIO.add_event_detect(13, GPIO.BOTH, callback=self.triggerChanged, bouncetime=500)
+        GPIO.add_event_detect(13, GPIO.BOTH, callback=self.triggerChanged, bouncetime=1)
         
-        self.nitrogenModeOn = 0 #GPIO.input(5)
+        self.nitrogenModeOn = GPIO.input(5)
         
   
     #def updateViews(self):
@@ -192,17 +192,17 @@ class DataMonitoringWindow(QtGui.QWidget):
                 
         new_time_queue = np.zeros(new_queue_size)
         new_canula_queue = np.zeros(new_queue_size)
-        #new_ecg_queue = np.zeros(new_queue_size)
+        new_ecg_queue = np.zeros(new_queue_size)
         #new_temp_queue = np.zeros(new_queue_size)
         
         new_time_queue[0:(copySize-1)] = self.time_queue[0:(copySize-1)] 
         new_canula_queue[0:(copySize-1)] = self.canula_queue[0:(copySize-1)]  
-        #new_ecg_queue[0:(copySize-1)] = self.ecg_queue[0:(copySize-1)] 
+        new_ecg_queue[0:(copySize-1)] = self.ecg_queue[0:(copySize-1)] 
         #new_temp_queue[0:(copySize-1)] = self.temp_queue[0:(copySize-1)] 
          
         self.time_queue = new_time_queue
         self.canula_queue = new_canula_queue
-        #self.ecg_queue = new_ecg_queue
+        self.ecg_queue = new_ecg_queue
         #self.temp_queue = new_temp_queue
         
         # Update buffer size
@@ -253,7 +253,7 @@ class DataMonitoringWindow(QtGui.QWidget):
           for i in range(startRead,stopReading): 
               self.time_queue[copyIdx] = self.dataFetcher.sync_time_buf[i]
               self.canula_queue[copyIdx] = self.canulaPressureSlope*self.dataFetcher.sync_canula_buf[i]+self.canulaPressureIntercept
-              #self.ecg_queue[copyIdx] = self.dataFetcher.sync_ecg_buf[i]
+              self.ecg_queue[copyIdx] = self.dataFetcher.sync_ecg_buf[i]
               #self.temp_queue[copyIdx] = self.dataFetcher.sync_temp_buf[i]
               copyIdx += 1
         
@@ -262,7 +262,7 @@ class DataMonitoringWindow(QtGui.QWidget):
             for i in range(0,endRead):
               self.time_queue[copyIdx] = self.dataFetcher.sync_time_buf[i]
               self.canula_queue[copyIdx] = self.canulaPressureSlope*self.dataFetcher.sync_canula_buf[i]+self.canulaPressureIntercept
-              #self.ecg_queue[copyIdx] = self.dataFetcher.sync_ecg_buf[i]
+              self.ecg_queue[copyIdx] = self.dataFetcher.sync_ecg_buf[i]
               #self.temp_queue[copyIdx] = self.dataFetcher.sync_temp_buf[i]
               copyIdx += 1
           
@@ -281,7 +281,7 @@ class DataMonitoringWindow(QtGui.QWidget):
           # Roll data to put newest data last
           self.time_queue = np.roll(self.time_queue,-nDataToRead)
           self.canula_queue = np.roll(self.canula_queue,-nDataToRead)
-          #self.ecg_queue = np.roll(self.ecg_queue,-nDataToRead)
+          self.ecg_queue = np.roll(self.ecg_queue,-nDataToRead)
           #self.temp_queue = np.roll(self.temp_queue,-nDataToRead)
                 
           # Show the new data
