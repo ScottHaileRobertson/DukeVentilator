@@ -22,14 +22,15 @@ class DataMonitoringWindow(QtGui.QWidget):
         # CONSTANTS
         self.MIN_DATA_FETCH_PERIOD = 0.0005
         self.MIN_PLOT_UPDATE_PERIOD = 0.25 # A little more than 60Hz
-        self.PLOT_TIME_RANGE = 10 # Total seconds of display
-        self.QUEUE_SIZE = int(round(2*self.PLOT_TIME_RANGE/self.MIN_DATA_FETCH_PERIOD))
+        self.PLOT_TIME_RANGE = 6 # Total seconds of display
+        self.QUEUE_SIZE = int(round(self.PLOT_TIME_RANGE/self.MIN_DATA_FETCH_PERIOD))
         self.TIME_SHIFT_PCT = 0.75
         self.TEXT_UPDATE_PERIOD = 1
         self.NEXT_TEXT_UPDATE = 1
         self.SLOW_UPDATE_PERIOD = 5
         self.NEXT_SLOW_UPDATE = 1 
         self.MAX_TRIGGERS_DISP = 20
+        self.MAX_HEARTBEAT_DISP = 50
         
         # Read in pressure calibration data
         canulaP_cal = np.genfromtxt('canulaPressure_calibration.csv', delimiter=',')
@@ -98,16 +99,22 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.ui.pressurePlot.setLabel('left', "Canula Pressure", units='cmH20')
         self.ui.pressurePlot.getAxis('left').enableAutoSIPrefix(False)
         self.ui.pressurePlot.setLabel('bottom', "Time", units='sec')
+        self.ui.ecgPlot.setMouseEnabled(x=False, y=True)
+        self.ui.ecgPlot.enableAutoRange(x=False,y=True)
+        self.ui.ecgPlot.setLabel('left', "ECG", units='???')
+        self.ui.ecgPlot.getAxis('left').enableAutoSIPrefix(False)
+        self.ui.ecgPlot.setLabel('bottom', "Time", units='sec')
         self.minXlim = 0
         self.updatePlotTimeRange()
         self.updateSlowPlotRefreshRate()
         self.maxXlim = self.minXlim + self.PLOT_TIME_RANGE
         self.ui.pressurePlot.setXRange(0,self.PLOT_TIME_RANGE,padding=0)
-        
+        self.ui.ecgPlot.setXRange(0,self.PLOT_TIME_RANGE,padding=0)
+                
         # Initialize pressure line
         self.pressureLine = pg.PlotCurveItem(x=[],y=[], \
            pen=pg.mkPen({'color': "0FF"}),antialias=True)
-        self.ui.pressurePlot.addItem(self.pressureLine)
+        self.ui.pressurePlot.addItem(self.pressureLine)     
         
         # Initialize a bunch of lightweight trigger lines
         self.triggerPen = pen=pg.mkPen({'color': "F0F"})
@@ -117,6 +124,20 @@ class DataMonitoringWindow(QtGui.QWidget):
         for i in range(self.MAX_TRIGGERS_DISP):
           #self.triggerLines[i].setValue(i)
           self.ui.pressurePlot.addItem(self.triggerLines[i],ignoreBounds=True)
+        
+        # Initialize ECG line
+        self.ecgLine = pg.PlotCurveItem(x=[],y=[], \
+           pen=pg.mkPen({'color': "0FF"}),antialias=True)
+        self.ui.ecgPlot.addItem(self.ecgLine)
+        
+        # Initialize a bunch of lightweight heartbeat lines
+        self.heartBeatPen = pen=pg.mkPen({'color': "F0F"})
+        self.heartBeatLines = [ pg.InfiniteLine(pos=-1,angle=90,movable=False, \
+           pen=self.heartBeatPen,bounds=None) for i in range(self.MAX_HEARTBEAT_DISP)]
+        self.heartBeatIdx = -1;
+        for i in range(self.MAX_HEARTBEAT_DISP):
+          #self.ecgLines[i].setValue(i)
+          self.ui.ecgPlot.addItem(self.heartBeatLines[i],ignoreBounds=True)
         
         # Initialize Min and Max pressure axis
         self.pressureSlowPlot = self.ui.vitalsPlot.plotItem
@@ -158,6 +179,8 @@ class DataMonitoringWindow(QtGui.QWidget):
         GPIO.add_event_detect(5, GPIO.BOTH, callback=self.hpVsO2Changed, bouncetime=1)
         GPIO.setup(13, GPIO.IN)
         GPIO.add_event_detect(13, GPIO.BOTH, callback=self.triggerChanged, bouncetime=1)
+        GPIO.setup(19, GPIO.IN)
+        GPIO.add_event_detect(19, GPIO.BOTH, callback=self.detectedHeartbeat, bouncetime=1)
         
         self.nitrogenModeOn = GPIO.input(5)
         
@@ -165,6 +188,14 @@ class DataMonitoringWindow(QtGui.QWidget):
     #def updateViews(self):
     #  self.tidalVolumeSlowPlot.setGeometry(self.pressureSlowPlot.sceneBoundingRect())
     #  self.tidalVolumeSlowPlot.linkedViewChanged(self.pressureSlowPlot.vb, self.tidalVolumeSlowPlot.XAxis)
+    
+    def detectedHeartbeat(self,chan):
+       # Update next trigger line
+       heartBeat_time = time.time() - self.start_time
+       self.heartBeatIdx += 1
+       while (self.heartBeatIdx >= self.MAX_HEARTBEAT_DISP):
+         self.heartBeatIdx -= self.MAX_HEARTBEAT_DISP
+       self.heartBeatLines[self.heartBeatIdx].setValue(heartBeat_time)
       
     def triggerChanged(self,chan):
        # Update next trigger line
@@ -211,9 +242,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         # Update axes
         self.maxXlim = self.minXlim + self.PLOT_TIME_RANGE
         self.ui.pressurePlot.setXRange(self.minXlim,self.maxXlim,padding=0)
-        
-       
-        
+
     def startGraphing(self):
         if (not self.isGraphing):
             self.isGraphing = True
@@ -286,6 +315,7 @@ class DataMonitoringWindow(QtGui.QWidget):
                 
           # Show the new data
           self.pressureLine.setData(self.time_queue,self.canula_queue)
+          self.ecgLine.setData(self.time_queue,self.ecg_queue)
           
         # Update time axis if necessary
         if(elapsed_time > self.maxXlim):
@@ -294,6 +324,7 @@ class DataMonitoringWindow(QtGui.QWidget):
               self.minXlim += self.TIME_SHIFT_PCT*self.PLOT_TIME_RANGE
               self.maxXlim = self.minXlim + self.PLOT_TIME_RANGE
             self.ui.pressurePlot.setXRange(self.minXlim,self.maxXlim,padding=0) 
+            self.ui.ecgPlot.setXRange(self.minXlim,self.maxXlim,padding=0) 
             
         # Update text and slow graph
         if(elapsed_time > min(self.NEXT_TEXT_UPDATE,self.NEXT_SLOW_UPDATE)):

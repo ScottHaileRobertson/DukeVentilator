@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file '../QtCreatorUI/mainwidget.ui'
 #
-# Created: Fri Aug 26 10:50:36 2016
+# Created: Tue Aug 30 12:18:26 2016
 #      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -26,7 +26,7 @@ except AttributeError:
 class Ui_MainWidget(object):
     def setupUi(self, MainWidget):
         MainWidget.setObjectName(_fromUtf8("MainWidget"))
-        MainWidget.resize(807, 488)
+        MainWidget.resize(791, 488)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -112,6 +112,15 @@ class Ui_MainWidget(object):
         self.pressurePlot.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.pressurePlot.setObjectName(_fromUtf8("pressurePlot"))
         self.plotVertLayout.addWidget(self.pressurePlot)
+        self.ecgPlot = PlotWidget(MainWidget)
+        self.ecgPlot.setMinimumSize(QtCore.QSize(150, 0))
+        self.ecgPlot.setStyleSheet(_fromUtf8("background-color: rgb(0, 170, 0);"))
+        self.ecgPlot.setFrameShape(QtGui.QFrame.NoFrame)
+        self.ecgPlot.setFrameShadow(QtGui.QFrame.Plain)
+        self.ecgPlot.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.ecgPlot.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.ecgPlot.setObjectName(_fromUtf8("ecgPlot"))
+        self.plotVertLayout.addWidget(self.ecgPlot)
         self.fastPlotHorizLayout = QtGui.QHBoxLayout()
         self.fastPlotHorizLayout.setObjectName(_fromUtf8("fastPlotHorizLayout"))
         self.textEdit = QtGui.QTextEdit(MainWidget)
@@ -149,7 +158,7 @@ class Ui_MainWidget(object):
         self.fastUpdatePeriod.setAccelerated(False)
         self.fastUpdatePeriod.setDecimals(1)
         self.fastUpdatePeriod.setMinimum(0.5)
-        self.fastUpdatePeriod.setMaximum(20.0)
+        self.fastUpdatePeriod.setMaximum(6.0)
         self.fastUpdatePeriod.setProperty("value", 4.0)
         self.fastUpdatePeriod.setObjectName(_fromUtf8("fastUpdatePeriod"))
         self.fastPlotHorizLayout.addWidget(self.fastUpdatePeriod)

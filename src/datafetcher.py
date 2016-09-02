@@ -8,7 +8,7 @@ import spidev
 class TimedDataFetcher:
   def __init__(self, fetchperiod):
     self.start_time = time.time()
-    self.BUFFERSIZE = 20000
+    self.BUFFERSIZE = 5000
     self.FETCHPERIOD = fetchperiod
     self.isFetching = False
     
