@@ -38,7 +38,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         canulaP_lin_fit = np.polyfit(canulaP_cal_raw,canulaP_cal_p,1)
         self.canulaPressureSlope = canulaP_lin_fit[0]
         self.canulaPressureIntercept = canulaP_lin_fit[1]        
-        print "CANULA PRESSURE CALIBRATION: slope=%f intercept=%f" % (self.canulaPressureSlope, self.canulaPressureIntercept)
+        #print "CANULA PRESSURE CALIBRATION: slope=%f intercept=%f" % (self.canulaPressureSlope, self.canulaPressureIntercept)
 
         regulatorP_cal = np.genfromtxt('regulatorPressure_calibration.csv', delimiter=',')
         regulatorP_cal_raw = regulatorP_cal[:,0]
@@ -46,7 +46,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         regulatorP_lin_fit = np.polyfit(regulatorP_cal_raw, regulatorP_cal_p,1)
         self.regulatorPressureSlope = regulatorP_lin_fit[0]
         self.regulatorPressureIntercept = regulatorP_lin_fit[1]
-        print "REGULATOR PRESSURE CALIBRATION: slope=%f intercept=%f" % (self.regulatorPressureSlope,self.regulatorPressureIntercept)
+        #print "REGULATOR PRESSURE CALIBRATION: slope=%f intercept=%f" % (self.regulatorPressureSlope,self.regulatorPressureIntercept)
         
         # Read in volume calibration data
         oxygenV_cal = np.genfromtxt('oxygenVolume_calibration.csv', delimiter=',')
@@ -55,7 +55,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         oxygenV_lin_fit = np.polyfit(oxygenV_cal_raw, oxygenV_cal_p,1)
         self.oxygenVolumeSlope = oxygenV_lin_fit[0]
         self.oxygenVolumeIntercept = oxygenV_lin_fit[1]
-        print "OXYGEN VOLUME CALIBRATION: slope=%f intercept=%f" % (self.oxygenVolumeSlope, self.oxygenVolumeIntercept)
+        #print "OXYGEN VOLUME CALIBRATION: slope=%f intercept=%f" % (self.oxygenVolumeSlope, self.oxygenVolumeIntercept)
         
         nitrogenV_cal = np.genfromtxt('nitrogenVolume_calibration.csv', delimiter=',')
         nitrogenV_cal_raw = nitrogenV_cal[:,0]
@@ -63,7 +63,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         nitrogenV_lin_fit = np.polyfit(nitrogenV_cal_raw, nitrogenV_cal_p,1)
         self.nitrogenVolumeSlope = nitrogenV_lin_fit[0]
         self.nitrogenVolumeIntercept = nitrogenV_lin_fit[1]
-        print "NITROGEN VOLUME CALIBRATION: slope=%f intercept=%f" % (self.nitrogenVolumeSlope, self.nitrogenVolumeIntercept)
+        #print "NITROGEN VOLUME CALIBRATION: slope=%f intercept=%f" % (self.nitrogenVolumeSlope, self.nitrogenVolumeIntercept)
         
         hpGasV_cal = np.genfromtxt('hpGasVolume_calibration.csv', delimiter=',')
         hpGasV_cal_raw = hpGasV_cal[:,0]
@@ -71,7 +71,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         hpGasV_lin_fit = np.polyfit(hpGasV_cal_raw, hpGasV_cal_p,1)
         self.hpGasVolumeSlope = hpGasV_lin_fit[0]
         self.hpGasVolumeIntercept = hpGasV_lin_fit[1]
-        print "HP GAS VOLUME CALIBRATION: slope=%f intercept=%f" % (self.hpGasVolumeSlope, self.hpGasVolumeIntercept)
+        #print "HP GAS VOLUME CALIBRATION: slope=%f intercept=%f" % (self.hpGasVolumeSlope, self.hpGasVolumeIntercept)
         
         
         # Create data fetching process
@@ -159,7 +159,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         GPIO.setup(13, GPIO.IN)
         GPIO.add_event_detect(13, GPIO.BOTH, callback=self.triggerChanged, bouncetime=500)
         
-        self.nitrogenModeOn = 0 #GPIO.input(5)
+        self.nitrogenModeOn = GPIO.input(5)
         
   
     #def updateViews(self):
