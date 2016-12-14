@@ -9,7 +9,7 @@ import time
 import RPi.GPIO as GPIO
 
 # Version
-VERSION_STRING = "1.0"
+VERSION_STRING = "2.0"
 
 class DataMonitoringWindow(QtGui.QWidget):
     def __init__(self):
@@ -31,6 +31,30 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.NEXT_SLOW_UPDATE = 1 
         self.MAX_TRIGGERS_DISP = 20
         self.MAX_HEARTBEAT_DISP = 50
+        self.HEART_BEATS_TO_AVG = 10
+        
+        # Initialize array to store time stamps of heartbeats
+        self.heartBeatArray = np.empty([1,self.HEART_BEATS_TO_AVG])
+        self.heartBeatIdx = 0
+        
+        # Read in bore temperature data
+        boreTemp_cal = np.genfromtxt('boreTemperature_calibration.csv', delimiter=',')
+        boreTemp_cal_raw = boreTemp_cal[:,0]
+        boreTemp_cal_temp = boreTemp_cal[:,1]
+        boreTemp_lin_fit = np.polyfit(boreTemp_cal_raw,boreTemp_cal_temp,1)
+        self.boreTempressureSlope = boreTemp_lin_fit[0]
+        self.boreTempressureIntercept = boreTemp_lin_fit[1]        
+        #print "BORE TEMPERATURE CALIBRATION: slope=%f intercept=%f" % (self.boreTempressureSlope, self.boreTempressureIntercept)
+
+        # Read in animal temperature data
+        animalTemp_cal = np.genfromtxt('animalTemperature_calibration.csv', delimiter=',')
+        animalTemp_cal_raw = animalTemp_cal[:,0]
+        animalTemp_cal_temp = animalTemp_cal[:,1]
+        animalTemp_lin_fit = np.polyfit(animalTemp_cal_raw,animalTemp_cal_temp,1)
+        self.animalTempressureSlope = animalTemp_lin_fit[0]
+        self.animalTempressureIntercept = animalTemp_lin_fit[1]        
+        #print "ANIMAL TEMPERATURE CALIBRATION: slope=%f intercept=%f" % (self.animalTempressureSlope, self.animalTempressureIntercept)
+
         
         # Read in pressure calibration data
         canulaP_cal = np.genfromtxt('canulaPressure_calibration.csv', delimiter=',')
@@ -39,7 +63,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         canulaP_lin_fit = np.polyfit(canulaP_cal_raw,canulaP_cal_p,1)
         self.canulaPressureSlope = canulaP_lin_fit[0]
         self.canulaPressureIntercept = canulaP_lin_fit[1]        
-        print "CANULA PRESSURE CALIBRATION: slope=%f intercept=%f" % (self.canulaPressureSlope, self.canulaPressureIntercept)
+        #print "CANULA PRESSURE CALIBRATION: slope=%f intercept=%f" % (self.canulaPressureSlope, self.canulaPressureIntercept)
 
         regulatorP_cal = np.genfromtxt('regulatorPressure_calibration.csv', delimiter=',')
         regulatorP_cal_raw = regulatorP_cal[:,0]
@@ -47,7 +71,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         regulatorP_lin_fit = np.polyfit(regulatorP_cal_raw, regulatorP_cal_p,1)
         self.regulatorPressureSlope = regulatorP_lin_fit[0]
         self.regulatorPressureIntercept = regulatorP_lin_fit[1]
-        print "REGULATOR PRESSURE CALIBRATION: slope=%f intercept=%f" % (self.regulatorPressureSlope,self.regulatorPressureIntercept)
+        #print "REGULATOR PRESSURE CALIBRATION: slope=%f intercept=%f" % (self.regulatorPressureSlope,self.regulatorPressureIntercept)
         
         # Read in volume calibration data
         oxygenV_cal = np.genfromtxt('oxygenVolume_calibration.csv', delimiter=',')
@@ -56,7 +80,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         oxygenV_lin_fit = np.polyfit(oxygenV_cal_raw, oxygenV_cal_p,1)
         self.oxygenVolumeSlope = oxygenV_lin_fit[0]
         self.oxygenVolumeIntercept = oxygenV_lin_fit[1]
-        print "OXYGEN VOLUME CALIBRATION: slope=%f intercept=%f" % (self.oxygenVolumeSlope, self.oxygenVolumeIntercept)
+        #print "OXYGEN VOLUME CALIBRATION: slope=%f intercept=%f" % (self.oxygenVolumeSlope, self.oxygenVolumeIntercept)
         
         nitrogenV_cal = np.genfromtxt('nitrogenVolume_calibration.csv', delimiter=',')
         nitrogenV_cal_raw = nitrogenV_cal[:,0]
@@ -64,7 +88,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         nitrogenV_lin_fit = np.polyfit(nitrogenV_cal_raw, nitrogenV_cal_p,1)
         self.nitrogenVolumeSlope = nitrogenV_lin_fit[0]
         self.nitrogenVolumeIntercept = nitrogenV_lin_fit[1]
-        print "NITROGEN VOLUME CALIBRATION: slope=%f intercept=%f" % (self.nitrogenVolumeSlope, self.nitrogenVolumeIntercept)
+        #print "NITROGEN VOLUME CALIBRATION: slope=%f intercept=%f" % (self.nitrogenVolumeSlope, self.nitrogenVolumeIntercept)
         
         hpGasV_cal = np.genfromtxt('hpGasVolume_calibration.csv', delimiter=',')
         hpGasV_cal_raw = hpGasV_cal[:,0]
@@ -72,7 +96,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         hpGasV_lin_fit = np.polyfit(hpGasV_cal_raw, hpGasV_cal_p,1)
         self.hpGasVolumeSlope = hpGasV_lin_fit[0]
         self.hpGasVolumeIntercept = hpGasV_lin_fit[1]
-        print "HP GAS VOLUME CALIBRATION: slope=%f intercept=%f" % (self.hpGasVolumeSlope, self.hpGasVolumeIntercept)
+        #print "HP GAS VOLUME CALIBRATION: slope=%f intercept=%f" % (self.hpGasVolumeSlope, self.hpGasVolumeIntercept)
         
         
         # Create data fetching process
@@ -110,11 +134,11 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.maxXlim = self.minXlim + self.PLOT_TIME_RANGE
         self.ui.pressurePlot.setXRange(0,self.PLOT_TIME_RANGE,padding=0)
         self.ui.ecgPlot.setXRange(0,self.PLOT_TIME_RANGE,padding=0)
-                
+        
         # Initialize pressure line
         self.pressureLine = pg.PlotCurveItem(x=[],y=[], \
            pen=pg.mkPen({'color': "0FF"}),antialias=True)
-        self.ui.pressurePlot.addItem(self.pressureLine)     
+        self.ui.pressurePlot.addItem(self.pressureLine)
         
         # Initialize a bunch of lightweight trigger lines
         self.triggerPen = pen=pg.mkPen({'color': "F0F"})
@@ -179,23 +203,19 @@ class DataMonitoringWindow(QtGui.QWidget):
         GPIO.add_event_detect(5, GPIO.BOTH, callback=self.hpVsO2Changed, bouncetime=1)
         GPIO.setup(13, GPIO.IN)
         GPIO.add_event_detect(13, GPIO.BOTH, callback=self.triggerChanged, bouncetime=1)
+        
         GPIO.setup(19, GPIO.IN)
         GPIO.add_event_detect(19, GPIO.BOTH, callback=self.detectedHeartbeat, bouncetime=1)
         
         self.nitrogenModeOn = GPIO.input(5)
         
   
-    #def updateViews(self):
-    #  self.tidalVolumeSlowPlot.setGeometry(self.pressureSlowPlot.sceneBoundingRect())
-    #  self.tidalVolumeSlowPlot.linkedViewChanged(self.pressureSlowPlot.vb, self.tidalVolumeSlowPlot.XAxis)
-    
-    def detectedHeartbeat(self,chan):
-       # Update next trigger line
-       heartBeat_time = time.time() - self.start_time
-       self.heartBeatIdx += 1
-       while (self.heartBeatIdx >= self.MAX_HEARTBEAT_DISP):
-         self.heartBeatIdx -= self.MAX_HEARTBEAT_DISP
-       self.heartBeatLines[self.heartBeatIdx].setValue(heartBeat_time)
+    def heartBeatDetected(self, chan)
+       self.heartBeatArray[self.heartBeatIdx] = time.time() - self.start_time;
+       if(self.heartBeatIdx == self.HEART_BEATS_TO_AVG - 1)
+         self.heartBeatIdx = 0 #Reset
+       else
+         self.heartBeatIdx = self.heartBeatIdx + 1
       
     def triggerChanged(self,chan):
        # Update next trigger line
@@ -206,8 +226,7 @@ class DataMonitoringWindow(QtGui.QWidget):
        self.triggerLines[self.triggerIdx].setValue(trig_time)
        
     def hpVsO2Changed(self,chan):
-       self.nitrogenModeOn = GPIO.input(5);
-          
+       self.nitrogenModeOn = GPIO.input(5);          
              
     def updateSlowPlotRefreshRate(self):
        self.NEXT_SLOW_UPDATE = self.NEXT_SLOW_UPDATE-self.SLOW_UPDATE_PERIOD+self.ui.slowUpdatePeriod.value()
@@ -242,7 +261,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         # Update axes
         self.maxXlim = self.minXlim + self.PLOT_TIME_RANGE
         self.ui.pressurePlot.setXRange(self.minXlim,self.maxXlim,padding=0)
-
+        
     def startGraphing(self):
         if (not self.isGraphing):
             self.isGraphing = True
@@ -330,16 +349,16 @@ class DataMonitoringWindow(QtGui.QWidget):
         if(elapsed_time > min(self.NEXT_TEXT_UPDATE,self.NEXT_SLOW_UPDATE)):
           min_val = min(self.canula_queue)
           max_val = max(self.canula_queue)
-          
-          # Calculate pressures
-          oxygen_pressure = self.regulatorPressureSlope*self.dataFetcher.getDataFromChannel(1)+self.regulatorPressureIntercept
-          nitrogen_pressure = self.regulatorPressureSlope*self.dataFetcher.getDataFromChannel(2)+self.regulatorPressureIntercept
-          hpGas_pressure = self.regulatorPressureSlope*self.dataFetcher.getDataFromChannel(3)+self.regulatorPressureIntercept
+
+            # Calculate pressures
+            oxygen_pressure = self.regulatorPressureSlope*self.dataFetcher.getDataFromChannel(1)+self.regulatorPressureIntercept
+            nitrogen_pressure = self.regulatorPressureSlope*self.dataFetcher.getDataFromChannel(2)+self.regulatorPressureIntercept
+            hpGas_pressure = self.regulatorPressureSlope*self.dataFetcher.getDataFromChannel(3)+self.regulatorPressureIntercept
         
-          # Calculate volumes
-          oxygen_volume = oxygen_pressure*self.oxygenVolumeSlope + self.oxygenVolumeIntercept
-          nitrogen_volume = nitrogen_pressure*self.nitrogenVolumeSlope + self.nitrogenVolumeIntercept
-          hpGas_volume = hpGas_pressure*self.hpGasVolumeSlope + self.hpGasVolumeIntercept
+            # Calculate volumes
+            oxygen_volume = oxygen_pressure*self.oxygenVolumeSlope + self.oxygenVolumeIntercept
+            nitrogen_volume = nitrogen_pressure*self.nitrogenVolumeSlope + self.nitrogenVolumeIntercept
+            hpGas_volume = hpGas_pressure*self.hpGasVolumeSlope + self.hpGasVolumeIntercept
           
           tidal_vol = oxygen_volume
           if(self.nitrogenModeOn):
@@ -375,7 +394,17 @@ class DataMonitoringWindow(QtGui.QWidget):
               mode_string = "Mode: HP Gas & Oxygen"
               
             self.ui.modeText.setPlainText(mode_string)    
-                
+            
+            # Calculate and update heart rate
+            heartRate = self.HEART_BEATS_TO_AVG / (max(self.heartBeatArray) - min(self.heartBeatArray))
+            heart_rate_string = "Heart Rate: %4.1fBPM" % heartRate
+            self.ui.heartRateText.setPlainText(heart_rate_string);
+            
+            # Calculate Temperatures            
+            bore_temp = self.boreTempressureSlope*self.dataFetcher.getDataFromChannel(7)+self.boreTempressureIntercept
+            animal_temp = self.animalTempressureSlope*self.dataFetcher.getDataFromChannel(6)+self.animalTempressureIntercept
+            tempTextString = "Bore Temp: %4.1f\nAnimal Temp: %4.1f" % (bore_temp, animal_temp)
+            self.ui.temperatureText.setPlainText(tempTextString)
                     
     def closeEvent(self, ce):
         self.stopGraphing()
