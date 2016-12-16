@@ -40,23 +40,11 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.heartBeatIdx = 0
         
         # Read in bore temperature data
-        boreTemp_cal = np.genfromtxt('boreTemperature_calibration.csv', delimiter=',')
-        boreTemp_cal_raw = boreTemp_cal[:,0]
-        boreTemp_cal_temp = boreTemp_cal[:,1]
-        boreTemp_lin_fit = np.polyfit(boreTemp_cal_raw,boreTemp_cal_temp,1)
-        self.boreTempressureSlope = boreTemp_lin_fit[0]
-        self.boreTempressureIntercept = boreTemp_lin_fit[1]        
-        #print "BORE TEMPERATURE CALIBRATION: slope=%f intercept=%f" % (self.boreTempressureSlope, self.boreTempressureIntercept)
-
-        # Read in animal temperature data
-        animalTemp_cal = np.genfromtxt('animalTemperature_calibration.csv', delimiter=',')
-        animalTemp_cal_raw = animalTemp_cal[:,0]
-        animalTemp_cal_temp = animalTemp_cal[:,1]
-        animalTemp_lin_fit = np.polyfit(animalTemp_cal_raw,animalTemp_cal_temp,1)
-        self.animalTempressureSlope = animalTemp_lin_fit[0]
-        self.animalTempressureIntercept = animalTemp_lin_fit[1]        
-        #print "ANIMAL TEMPERATURE CALIBRATION: slope=%f intercept=%f" % (self.animalTempressureSlope, self.animalTempressureIntercept)
-
+        tempSensor_cal = np.genfromtxt('temperature_calibration.csv', delimiter=',')
+        tempSensor_cal_raw = tempSensor_cal[:,0]
+        tempSensor_cal_temp = tempSensor_cal[:,1]      
+        self.tempSensor_fit = np.polyfit(tempSensor_cal_temp, tempSensor_cal_raw, 5)
+        print self.tempSensor_fit
         
         # Read in pressure calibration data
         canulaP_cal = np.genfromtxt('canulaPressure_calibration.csv', delimiter=',')
@@ -230,7 +218,6 @@ class DataMonitoringWindow(QtGui.QWidget):
        
     def hpVsO2Changed(self,chan):
        time.sleep(0.5)
-       self.countTemp = self.countTemp +1
        self.nitrogenModeOn = GPIO.input(5)
        
     def updateSlowPlotRefreshRate(self):
@@ -410,15 +397,14 @@ class DataMonitoringWindow(QtGui.QWidget):
             else:
                 # Calculate and update heart rate
                 timeForAllBeats = (max(self.heartBeatArray) - min(self.heartBeatArray))
-                # timeForAllBeats = timeForAllBeats[0]
                 if(timeForAllBeats > 0):
                   heartRate = 60*self.HEART_BEATS_TO_AVG / timeForAllBeats
                   heart_rate_string = "Heart Rate: %4.1f BPM" % heartRate
                   self.ui.heartRateText.setPlainText(heart_rate_string);
             
             # Calculate Temperatures            
-            bore_temp = self.boreTempressureSlope*self.dataFetcher.getDataFromChannel(7)+self.boreTempressureIntercept
-            animal_temp = self.animalTempressureSlope*self.dataFetcher.getDataFromChannel(6)+self.animalTempressureIntercept
+            bore_temp = np.polyval(self.tempSensor_fit,self.dataFetcher.getDataFromChannel(7))
+            animal_temp = np.polyval(self.tempSensor_fit,self.dataFetcher.getDataFromChannel(6))
             tempTextString = "Bore Temp: %4.1f\nAnimal Temp: %4.1f" % (bore_temp, animal_temp)
             self.ui.temperatureText.setPlainText(tempTextString)
                     
