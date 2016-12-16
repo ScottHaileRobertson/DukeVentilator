@@ -42,8 +42,8 @@ class DataMonitoringWindow(QtGui.QWidget):
         # Read in bore temperature data
         tempSensor_cal = np.genfromtxt('temperature_calibration.csv', delimiter=',')
         tempSensor_cal_raw = tempSensor_cal[:,0]
-        tempSensor_cal_temp = tempSensor_cal[:,1]      
-        self.tempSensor_fit = np.polyfit(tempSensor_cal_temp, tempSensor_cal_raw, 5)
+        tempSensor_cal_temp = tempSensor_cal[:,1]
+        self.tempSensor_fit = np.polyfit(tempSensor_cal_temp, tempSensor_cal_raw, 3)
         print self.tempSensor_fit
         
         # Read in pressure calibration data
