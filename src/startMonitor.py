@@ -31,10 +31,12 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.NEXT_SLOW_UPDATE = 1 
         self.MAX_TRIGGERS_DISP = 20
         self.MAX_HEARTBEAT_DISP = 50
-        self.HEART_BEATS_TO_AVG = 10
+        self.HEART_BEATS_TO_AVG = 20
+        self.start_time = 0
+        self.HEART_BEATS_COUNTED = 0
         
         # Initialize array to store time stamps of heartbeats
-        self.heartBeatArray = np.empty([1,self.HEART_BEATS_TO_AVG])
+        self.heartBeatArray = [0]*self.HEART_BEATS_TO_AVG
         self.heartBeatIdx = 0
         
         # Read in bore temperature data
@@ -200,21 +202,22 @@ class DataMonitoringWindow(QtGui.QWidget):
         # Set GPIO mode to board so things go smoothly with RPi upgrades
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(5, GPIO.IN)
-        GPIO.add_event_detect(5, GPIO.BOTH, callback=self.hpVsO2Changed, bouncetime=1)
+        GPIO.add_event_detect(5, GPIO.BOTH, callback=self.hpVsO2Changed, bouncetime=500)
         GPIO.setup(13, GPIO.IN)
-        GPIO.add_event_detect(13, GPIO.BOTH, callback=self.triggerChanged, bouncetime=1)
+        GPIO.add_event_detect(13, GPIO.BOTH, callback=self.triggerChanged, bouncetime=10)
         
-        GPIO.setup(19, GPIO.IN)
-        GPIO.add_event_detect(19, GPIO.BOTH, callback=self.detectedHeartbeat, bouncetime=1)
+        GPIO.setup(26, GPIO.IN)
+        GPIO.add_event_detect(26, GPIO.BOTH, callback=self.heartBeatDetected, bouncetime=10)
         
         self.nitrogenModeOn = GPIO.input(5)
         
   
-    def heartBeatDetected(self, chan)
+    def heartBeatDetected(self, chan):
+       self.HEART_BEATS_COUNTED = self.HEART_BEATS_COUNTED + 1
        self.heartBeatArray[self.heartBeatIdx] = time.time() - self.start_time;
-       if(self.heartBeatIdx == self.HEART_BEATS_TO_AVG - 1)
+       if(self.heartBeatIdx == (self.HEART_BEATS_TO_AVG-1)):
          self.heartBeatIdx = 0 #Reset
-       else
+       else:
          self.heartBeatIdx = self.heartBeatIdx + 1
       
     def triggerChanged(self,chan):
@@ -226,8 +229,10 @@ class DataMonitoringWindow(QtGui.QWidget):
        self.triggerLines[self.triggerIdx].setValue(trig_time)
        
     def hpVsO2Changed(self,chan):
-       self.nitrogenModeOn = GPIO.input(5);          
-             
+       time.sleep(0.5)
+       self.countTemp = self.countTemp +1
+       self.nitrogenModeOn = GPIO.input(5)
+       
     def updateSlowPlotRefreshRate(self):
        self.NEXT_SLOW_UPDATE = self.NEXT_SLOW_UPDATE-self.SLOW_UPDATE_PERIOD+self.ui.slowUpdatePeriod.value()
        self.SLOW_UPDATE_PERIOD = self.ui.slowUpdatePeriod.value()
@@ -350,21 +355,23 @@ class DataMonitoringWindow(QtGui.QWidget):
           min_val = min(self.canula_queue)
           max_val = max(self.canula_queue)
 
-            # Calculate pressures
-            oxygen_pressure = self.regulatorPressureSlope*self.dataFetcher.getDataFromChannel(1)+self.regulatorPressureIntercept
-            nitrogen_pressure = self.regulatorPressureSlope*self.dataFetcher.getDataFromChannel(2)+self.regulatorPressureIntercept
-            hpGas_pressure = self.regulatorPressureSlope*self.dataFetcher.getDataFromChannel(3)+self.regulatorPressureIntercept
+          # Calculate pressures
+          oxygen_pressure = self.regulatorPressureSlope*self.dataFetcher.getDataFromChannel(1)+self.regulatorPressureIntercept
+          nitrogen_pressure = self.regulatorPressureSlope*self.dataFetcher.getDataFromChannel(2)+self.regulatorPressureIntercept
+          hpGas_pressure = self.regulatorPressureSlope*self.dataFetcher.getDataFromChannel(3)+self.regulatorPressureIntercept
         
-            # Calculate volumes
-            oxygen_volume = oxygen_pressure*self.oxygenVolumeSlope + self.oxygenVolumeIntercept
-            nitrogen_volume = nitrogen_pressure*self.nitrogenVolumeSlope + self.nitrogenVolumeIntercept
-            hpGas_volume = hpGas_pressure*self.hpGasVolumeSlope + self.hpGasVolumeIntercept
+          # Calculate volumes
+          oxygen_volume = oxygen_pressure*self.oxygenVolumeSlope + self.oxygenVolumeIntercept
+          nitrogen_volume = nitrogen_pressure*self.nitrogenVolumeSlope + self.nitrogenVolumeIntercept
+          hpGas_volume = hpGas_pressure*self.hpGasVolumeSlope + self.hpGasVolumeIntercept
           
           tidal_vol = oxygen_volume
           if(self.nitrogenModeOn):
             tidal_vol += nitrogen_volume
+            mode_string = "Mode: Nitrogen & Oxygen"
           else:
             tidal_vol += hpGas_volume
+            mode_string = "Mode: HP Gas & Oxygen"
           
           if(elapsed_time > self.NEXT_SLOW_UPDATE):
             while(elapsed_time > self.NEXT_SLOW_UPDATE):
@@ -386,19 +393,28 @@ class DataMonitoringWindow(QtGui.QWidget):
             self.ui.oxygenText.setPlainText("Oxygen\nP: %3.1f psi  V: %4.2f mL" % (oxygen_pressure,oxygen_volume)) 
             self.ui.hpText.setPlainText("HP Gas\nP: %3.1f psi  V: %4.2f mL" % (hpGas_pressure,hpGas_volume)) 
             
-            self.ui.canulaText.setPlainText("Canula\nPmax: %3.1f cmH20\nPmin: %3.1f cmH20\nTV  : %4.2f mL" % (max_val, min_val,tidal_vol)) 
-
-            if(self.nitrogenModeOn):
-              mode_string = "Mode: Nitrogen & Oxygen"
-            else:
-              mode_string = "Mode: HP Gas & Oxygen"
-              
+            self.ui.canulaText.setPlainText("Canula\nPmax: %3.1f cmH20\nPmin: %3.1f cmH20\nTV  : %4.2f mL" % (max_val, min_val,tidal_vol))  
             self.ui.modeText.setPlainText(mode_string)    
+
+            # Crude check that animal is alive
+            timeSinceLastRecordedHeartBeat = (time.time() - self.start_time - self.heartBeatArray[self.heartBeatIdx -1])
+            if(timeSinceLastRecordedHeartBeat > 2):
+               self.HEART_BEATS_COUNTED = 0
+               self.heartBeatArray = [0]*self.HEART_BEATS_TO_AVG
+               self.heartBeatIdx = 0 #Reset
             
-            # Calculate and update heart rate
-            heartRate = self.HEART_BEATS_TO_AVG / (max(self.heartBeatArray) - min(self.heartBeatArray))
-            heart_rate_string = "Heart Rate: %4.1fBPM" % heartRate
-            self.ui.heartRateText.setPlainText(heart_rate_string);
+            if(self.HEART_BEATS_COUNTED == 0):
+                 self.ui.heartRateText.setPlainText("Heart Rate: NOT DETECTED");
+            elif(self.HEART_BEATS_COUNTED < self.HEART_BEATS_TO_AVG):
+                self.ui.heartRateText.setPlainText("Heart Rate: Calculating");
+            else:
+                # Calculate and update heart rate
+                timeForAllBeats = (max(self.heartBeatArray) - min(self.heartBeatArray))
+                # timeForAllBeats = timeForAllBeats[0]
+                if(timeForAllBeats > 0):
+                  heartRate = 60*self.HEART_BEATS_TO_AVG / timeForAllBeats
+                  heart_rate_string = "Heart Rate: %4.1f BPM" % heartRate
+                  self.ui.heartRateText.setPlainText(heart_rate_string);
             
             # Calculate Temperatures            
             bore_temp = self.boreTempressureSlope*self.dataFetcher.getDataFromChannel(7)+self.boreTempressureIntercept
