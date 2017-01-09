@@ -32,7 +32,6 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.FAST_PLOT_LINE_IDX = 0
         self.FAST_PLOT_POSITION_IDX = 0
 
-        self.QUEUE_SIZE = int(round(self.PLOT_TIME_RANGE / self.DATA_FETCH_PERIOD))  # TODO eliminate this eventually
         self.TIME_SHIFT_PCT = 0.75
         self.TEXT_UPDATE_PERIOD = 1
         self.NEXT_TEXT_UPDATE = 1
@@ -248,27 +247,6 @@ class DataMonitoringWindow(QtGui.QWidget):
     def updatePlotTimeRange(self):
         self.PLOT_TIME_RANGE = self.ui.fastUpdatePeriod.value()
 
-        # Update plotting size
-        old_queue_size = self.QUEUE_SIZE
-        new_queue_size = int(round(2 * self.PLOT_TIME_RANGE / self.MIN_DATA_FETCH_PERIOD))
-        copySize = min(old_queue_size, new_queue_size)
-
-        new_time_queue = np.zeros(new_queue_size)
-        new_canula_queue = np.zeros(new_queue_size)
-        new_ecg_queue = np.zeros(new_queue_size)
-        # new_temp_queue = np.zeros(new_queue_size)
-
-        new_time_queue[0:(copySize - 1)] = self.time_queue[0:(copySize - 1)]
-        new_canula_queue[0:(copySize - 1)] = self.canula_queue[0:(copySize - 1)]
-        new_ecg_queue[0:(copySize - 1)] = self.ecg_queue[0:(copySize - 1)]
-
-        self.time_queue = new_time_queue
-        self.canula_queue = new_canula_queue
-        self.ecg_queue = new_ecg_queue
-
-        # Update buffer size
-        self.QUEUE_SIZE = new_queue_size
-
         # Update axes
         self.maxXlim = self.minXlim + self.PLOT_TIME_RANGE
         self.ui.ventilationPlot.setXRange(self.minXlim, self.maxXlim, padding=0)
@@ -344,7 +322,6 @@ class DataMonitoringWindow(QtGui.QWidget):
                 spaceLeftInLine = self.FAST_PLOT_LINE_LENGTH - self.FAST_PLOT_POSITION_IDX
 
                 # TODO Make sure this works to get data -> convert to use append
-                # TODO NO WAY THIS WORKS
                 self.accum_time_vec = self.ventilationLines[self.FAST_PLOT_LINE_IDX].xData
                 self.accum_vent_vec = self.ventilationLines[self.FAST_PLOT_LINE_IDX].yData
                 self.accum_ecg_vec = self.ecgLines[self.FAST_PLOT_LINE_IDX].yData
