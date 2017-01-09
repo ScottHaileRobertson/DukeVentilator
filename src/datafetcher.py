@@ -2,7 +2,6 @@
 import time
 import multiprocessing as mp 
 import numpy as np
-import csv
 import spidev
     
 class TimedDataFetcher:
@@ -25,7 +24,6 @@ class TimedDataFetcher:
     self.sync_time_buf = mp.Array('d',range(self.BUFFERSIZE))
     self.sync_canula_buf = mp.Array('d',range(self.BUFFERSIZE))
     self.sync_ecg_buf = mp.Array('d',range(self.BUFFERSIZE))
-    #self.sync_temp_buf = mp.Array('d',range(self.BUFFERSIZE))
     
     self.sync_bufferStartIdx = mp.Value('I', 0)
     self.sync_bufferLength = mp.Value('I', 0)
@@ -54,12 +52,11 @@ class TimedDataFetcher:
     # Fetch new data until the end of time, or when the user closes the window
     while self.isFetching:
       # Get timestamp for data
-      t_stamp = time.time() - self.start_time
+      start_time_stamp = time.time()
     
       # Fetch new data
       canula = self.getDataFromChannel(0)
       ecg = self.getDataFromChannel(5)
-      #temp = self.getDataFromChannel(5)
       
       # Add data to buffer and increment index under lock
       self.indexLock.acquire()
@@ -77,29 +74,22 @@ class TimedDataFetcher:
         while(self.sync_bufferEndIdx.value >= self.BUFFERSIZE):
           self.sync_bufferEndIdx.value = self.sync_bufferEndIdx.value - self.BUFFERSIZE
       self.indexLock.release()
-      
-       
-      self.sync_time_buf[self.sync_bufferEndIdx.value] = t_stamp
+
+      self.sync_time_buf[self.sync_bufferEndIdx.value] = start_time_stamp - self.start_time
       self.sync_canula_buf[self.sync_bufferEndIdx.value] = canula
       self.sync_ecg_buf[self.sync_bufferEndIdx.value] = ecg
-      #self.sync_temp_buf[self.sync_bufferEndIdx.value = temp
-      
-      # Write to csvfile
-      #self.csvwriter.writerow([t_stamp,canula,o2,n2,hp,ecg,temp,
-            
-      time.sleep(self.FETCHPERIOD) 
+
+      timeSpentFetching = time.time() - start_time_stamp
+      if(timeSpentFetching < self.FETCHPERIOD):
+        time.sleep(self.FETCHPERIOD-timeSpentFetching)
     
   def startFetching(self):
       if not self.isFetching:
-          #self.csvfile = open('DukeVentilatorData.csv','w')
-          #self.csvwriter = csv.writer(self.csvfile)
           self.isFetching = True
           self.fetch_process.start()
-          
-    
+
   def stopFetching(self):
       if self.isFetching:
           self.fetch_process.terminate()
           self.fetch_process.join()
           self.isFetching = False
-          #self.csvfile.close()
