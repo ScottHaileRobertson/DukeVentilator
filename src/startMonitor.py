@@ -12,7 +12,6 @@ import RPi.GPIO as GPIO
 # Version
 VERSION_STRING = "2.0"
 
-
 class DataMonitoringWindow(QtGui.QWidget):
     def __init__(self):
         # Setup UI 
@@ -32,6 +31,11 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.FAST_PLOT_LINE_IDX = 0
         self.FAST_PLOT_POSITION_IDX = 0
 
+        self.UPDATE_SLOW_BOUNDS_TIME = 20 # Sec (initially at least)
+        self.UPDATE_SLOW_BOUNDS_PCT = 1.5
+        self.slowBounds_minX = 0
+        self.slowBounds_maxX = self.UPDATE_SLOW_BOUNDS_TIME
+
         self.TIME_SHIFT_PCT = 0.75
         self.TEXT_UPDATE_PERIOD = 1
         self.NEXT_TEXT_UPDATE = 1
@@ -44,7 +48,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.writeThisHeartRate = ''
         self.writeThisAnimalTemp = ''
 
-        self.csvfile = open('DukeVentilatorData.csv', 'w')
+        self.csvfile = open('DukeVentilatorData_' + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f") + '.csv', 'w')
         self.csvwriter = csv.writer(self.csvfile)
 
         # Initialize array to store time stamps of heartbeats
@@ -56,16 +60,16 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.heartBeatIdx = 0
 
         # Read in bore temperature data
-        tempSensor_cal = np.genfromtxt('temperature_calibration.csv', delimiter=',')
-        tempSensor_cal_raw = tempSensor_cal[:, 0]
-        tempSensor_cal_temp = tempSensor_cal[:, 1]
-        self.tempSensor_fit = np.polyfit(tempSensor_cal_temp, tempSensor_cal_raw, 3)
+        temp_sensor_cal = np.genfromtxt('temperature_calibration.csv', delimiter=',')
+        temp_sensor_cal_raw = temp_sensor_cal[:, 0]
+        temp_sensor_cal_temp = temp_sensor_cal[:, 1]
+        self.tempSensor_fit = np.polyfit(temp_sensor_cal_temp, temp_sensor_cal_raw, 3)
 
         # Read in pressure calibration data
-        canulaP_cal = np.genfromtxt('canulaPressure_calibration.csv', delimiter=',')
-        canulaP_cal_raw = canulaP_cal[:, 0]
-        canulaP_cal_p = canulaP_cal[:, 1]
-        canulaP_lin_fit = np.polyfit(canulaP_cal_raw, canulaP_cal_p, 1)
+        canula_p_cal = np.genfromtxt('canulaPressure_calibration.csv', delimiter=',')
+        canula_p_cal_raw = canula_p_cal[:, 0]
+        canula_p_cal_p = canula_p_cal[:, 1]
+        canulaP_lin_fit = np.polyfit(canula_p_cal_raw, canula_p_cal_p, 1)
         self.canulaPressureSlope = canulaP_lin_fit[0]
         self.canulaPressureIntercept = canulaP_lin_fit[1]
 
@@ -115,7 +119,7 @@ class DataMonitoringWindow(QtGui.QWidget):
             self.ui.ventilationPlot.addItem(self.ventilationLines[i])
 
         # Initialize a bunch of lightweight trigger lines
-        self.triggerPen = pen = pg.mkPen({'color': "F0F"})
+        self.triggerPen = pg.mkPen({'color': "F0F"})
         self.triggerLines = [pg.InfiniteLine(pos=-1, angle=90, movable=False, pen=self.triggerPen, bounds=None) for i in
                              range(self.MAX_TRIGGERS_DISP)]
         self.triggerIdx = -1
@@ -139,7 +143,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.accum_ecg_vec = []
 
         # Initialize a bunch of lightweight heartbeat lines
-        self.heartBeatPen = pen = pg.mkPen({'color': "C00"})
+        self.heartBeatPen = pg.mkPen({'color': "C00"})
         self.heartBeatLines = [pg.InfiniteLine(pos=-1, angle=90, movable=False, pen=self.heartBeatPen, bounds=None) for
                                i in range(self.MAX_HEARTBEAT_DISP)]
         self.heartBeatLine_Idx = -1
@@ -152,6 +156,8 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.maxXlim = self.minXlim + self.PLOT_TIME_RANGE
 
         # Initialize Min and Max pressure axis
+        self.ui.vitalsPlot.setMouseEnabled(x=False, y=True)
+        self.ui.vitalsPlot.enableAutoRange(x=False, y=True)
         self.pressureSlowPlot = self.ui.vitalsPlot.plotItem
         self.pressureSlowPlot.getAxis('left').setLabel("Canula Pressure", units='cmH20')
         self.pressureSlowPlot.getAxis('left').enableAutoSIPrefix(False)
@@ -184,7 +190,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.temperatureAxis.linkToView(self.temperatureViewbox)
         self.temperatureViewbox.setXLink(self.pressureSlowPlot)
 
-        self.updateViews();
+        self.updateViews()
         self.pressureSlowPlot.vb.sigResized.connect(self.updateViews)
 
         # Setup dynamic plotting process
@@ -217,7 +223,7 @@ class DataMonitoringWindow(QtGui.QWidget):
     def heartBeatDetected(self, chan):
         trig_time = time.time() - self.start_time
         self.HEART_BEATS_COUNTED = self.HEART_BEATS_COUNTED + 1
-        self.heartBeatArray[self.heartBeatIdx] = trig_time;
+        self.heartBeatArray[self.heartBeatIdx] = trig_time
         if (self.heartBeatIdx == (self.HEART_BEATS_TO_AVG - 1)):
             self.heartBeatIdx = 0  # Reset
         else:
@@ -272,7 +278,7 @@ class DataMonitoringWindow(QtGui.QWidget):
 
         # Under lock, find how much data we have to read
         self.dataFetcher.indexLock.acquire()
-        nDataToRead = np.int32(self.dataFetcher.sync_bufferLength.value);
+        nDataToRead = np.int32(self.dataFetcher.sync_bufferLength.value)
         lastIdx = self.dataFetcher.sync_bufferEndIdx.value
         endRead = lastIdx + 1
         if (self.dataFetcher.sync_bufferFull.value):
@@ -321,19 +327,16 @@ class DataMonitoringWindow(QtGui.QWidget):
             while (nDataToRead > 0):
                 spaceLeftInLine = self.FAST_PLOT_LINE_LENGTH - self.FAST_PLOT_POSITION_IDX
 
-                # TODO Make sure this works to get data -> convert to use append
-                self.accum_time_vec = self.ventilationLines[self.FAST_PLOT_LINE_IDX].xData
-                self.accum_vent_vec = self.ventilationLines[self.FAST_PLOT_LINE_IDX].yData
-                self.accum_ecg_vec = self.ecgLines[self.FAST_PLOT_LINE_IDX].yData
+                # TODO make sure this actually works
+                self.accum_time_vec = []
+                self.accum_vent_vec = []
+                self.accum_ecg_vec = []
 
                 while (nDataToRead >= spaceLeftInLine):
                     dataToAddToThisLine = min(nDataToRead, spaceLeftInLine)
-                    self.accum_time_vec = [self.accum_time_vectemp_time_queue[startReadPosition:(
-                    startReadPosition + dataToAddToThisLine - 1)]]
-                    self.accum_vent_vec = [self.accum_vent_vectemp_canula_queue[startReadPosition:(
-                    startReadPosition + dataToAddToThisLine - 1)]]
-                    self.accum_ecg_vec = [self.accum_ecg_vectemp_ecg_queue[startReadPosition:(
-                    startReadPosition + dataToAddToThisLine - 1)]]
+                    self.accum_time_vec.append(temp_time_queue[startReadPosition:(startReadPosition + dataToAddToThisLine - 1)])
+                    self.accum_vent_vec.append(temp_canula_queue[startReadPosition:(startReadPosition + dataToAddToThisLine - 1)])
+                    self.accum_ecg_vec.append(temp_ecg_queue[startReadPosition:(startReadPosition + dataToAddToThisLine - 1)])
 
                     # Plot new data
                     self.ecgLines[self.FAST_PLOT_LINE_IDX].setData(self.accum_time_vec, self.accum_ecg_vec)
@@ -345,18 +348,16 @@ class DataMonitoringWindow(QtGui.QWidget):
                     self.accum_ecg_vec = self.accum_ecg_vec[self.FAST_PLOT_POSITION_IDX - 1]
                     self.FAST_PLOT_LINE_IDX = self.FAST_PLOT_LINE_IDX + 1
                     self.FAST_PLOT_POSITION_IDX = 1  # First index is taken up by previous line's last point to connect them
+                    spaceLeftInLine = self.FAST_PLOT_LINE_LENGTH - self.FAST_PLOT_POSITION_IDX
 
                     # Update ammount of data to plot
                     nDataToRead = nDataToRead - dataToAddToThisLine
 
                 # Add last little bit of data
                 if (nDataToRead > 0):
-                    self.accum_time_vec = [
-                        self.accum_time_vectemp_time_queue[startReadPosition:(startReadPosition + nDataToRead - 1)]]
-                    self.accum_vent_vec = [
-                        self.accum_vent_vectemp_canula_queue[startReadPosition:(startReadPosition + nDataToRead - 1)]]
-                    self.accum_ecg_vec = [self.accum_ecg_vec
-                                          temp_ecg_queue[startReadPosition:(startReadPosition + nDataToRead - 1)]]
+                    self.accum_time_vec.append(temp_time_queue[startReadPosition:(startReadPosition + nDataToRead - 1)])
+                    self.accum_vent_vec.append(temp_canula_queue[startReadPosition:(startReadPosition + nDataToRead - 1)])
+                    self.accum_ecg_vec.append(temp_ecg_queue[startReadPosition:(startReadPosition + nDataToRead - 1)])
 
                     # Plot new data
                     self.ecgLines[self.FAST_PLOT_LINE_IDX].setData(self.accum_time_vec, self.accum_ecg_vec)
@@ -372,8 +373,18 @@ class DataMonitoringWindow(QtGui.QWidget):
             while (elapsed_time > self.maxXlim):
                 self.minXlim += self.TIME_SHIFT_PCT * self.PLOT_TIME_RANGE
                 self.maxXlim = self.minXlim + self.PLOT_TIME_RANGE
-            self.ui.ventilationPlot.setXRange(self.minXlim, self.maxXlim, padding=0)
-            self.ui.ecgPlot.setXRange(self.minXlim, self.maxXlim, padding=0)
+            if(self.ui.ventilationPlot.autoRangeEnabled()):
+                self.ui.ventilationPlot.setXRange(self.minXlim, self.maxXlim, padding=0)
+            if (self.ui.ecgPlot.autoRangeEnabled()):
+                self.ui.ecgPlot.setXRange(self.minXlim, self.maxXlim, padding=0)
+
+        if (elapsed_time > self.slowBounds_maxX):
+            # Update axes
+            while (elapsed_time > self.slowBounds_maxX):
+                self.slowBounds_maxX = round(self.slowBounds_maxX * self.UPDATE_SLOW_BOUNDS_PCT)
+            if (self.ui.vitalsPlot.autoRangeEnabled()):
+                self.ui.vitalsPlot.setXRange(self.slowBounds_minX, self.slowBounds_maxX, padding=0)
+                # self.pressureSlowPlot.setXRange(self.slowBounds_minX, self.slowBounds_maxX, padding=0)
 
         # Update text and slow graph
         if (elapsed_time > min(self.NEXT_TEXT_UPDATE, self.NEXT_SLOW_UPDATE)):
@@ -425,8 +436,8 @@ class DataMonitoringWindow(QtGui.QWidget):
                     self.heartBeatIdx = 0  # Reset
                     self.writeThisHeartRate = 'N/A'
                 if (self.HEART_BEATS_COUNTED == 0):
-                    self.ui.heartRateText.setPlainText("Heart Rate: NOT DETECTED");
-                    if (self.CURRENT_HEARTRATE_COUNT != 0)
+                    self.ui.heartRateText.setPlainText("Heart Rate: NOT DETECTED")
+                    if (self.CURRENT_HEARTRATE_COUNT != 0):
                         self.CURRENT_HEARTRATE_DATA = []
                         self.CURRENT_HEARTRATE_TIME = []
                         self.CURRENT_HEARTRATE_COUNT = 0
@@ -435,8 +446,8 @@ class DataMonitoringWindow(QtGui.QWidget):
                         self.heartrateSlowPlot.addItem(self.CURRENT_HEARTRATE_LINE)
                     self.writeThisHeartRate = 'N/A'
                 elif (self.HEART_BEATS_COUNTED < self.HEART_BEATS_TO_AVG):
-                    self.ui.heartRateText.setPlainText("Heart Rate: Calculating");
-                    if (self.CURRENT_HEARTRATE_COUNT != 0)
+                    self.ui.heartRateText.setPlainText("Heart Rate: Calculating")
+                    if (self.CURRENT_HEARTRATE_COUNT != 0):
                         self.CURRENT_HEARTRATE_DATA = []
                         self.CURRENT_HEARTRATE_TIME = []
                         self.CURRENT_HEARTRATE_COUNT = 0
