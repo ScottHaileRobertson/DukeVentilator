@@ -18,26 +18,35 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.ui = Ui_MainWidget()
         self.ui.setupUi(self)
         self.setWindowTitle("Duke Animal Monitor v" + VERSION_STRING)
-        
+
         # CONSTANTS
-        self.MIN_DATA_FETCH_PERIOD = 0.0005
-        self.MIN_PLOT_UPDATE_PERIOD = 0.25 # A little more than 60Hz
-        self.PLOT_TIME_RANGE = 6 # Total seconds of display
-        self.QUEUE_SIZE = int(round(self.PLOT_TIME_RANGE/self.MIN_DATA_FETCH_PERIOD))
+        self.DATA_FETCH_PERIOD = 0.0005
+        self.MAXPLOT_UPDATE_PERIOD = 0.25 # TODO remove this... plot as fast as we can
+        self.PLOT_TIME_RANGE = 6 # Total seconds of display #TODO make this the max length
+        self.SLOW_PLOT_LINE_LENGTH = 250
+        self.SLOW_PLOT_LINE_IDX = 0
+        self.FAST_PLOT_LINE_LENGTH = 250
+        self.FAST_PLOT_NLINES = math.ceil(self.PLOT_TIME_RANGE/self.DATA_FETCH_PERIOD)+1
+        self.FAST_PLOT_LINE_IDX = 0
+        self.FAST_PLOT_POSITION_IDX = 0
+
+        self.QUEUE_SIZE = int(round(self.PLOT_TIME_RANGE / self.DATA_FETCH_PERIOD)) # TODO eliminate this eventually
         self.TIME_SHIFT_PCT = 0.75
         self.TEXT_UPDATE_PERIOD = 1
         self.NEXT_TEXT_UPDATE = 1
         self.SLOW_UPDATE_PERIOD = 5
-        self.NEXT_SLOW_UPDATE = 1 
-        self.MAX_TRIGGERS_DISP = 20
-        self.MAX_HEARTBEAT_DISP = 200
-        self.HEART_BEATS_TO_AVG = 10
-        self.MAX_TIME_BETWEEN_HEARTBEATS = 30
+        self.NEXT_SLOW_UPDATE = 1
+
+        self.MAX_DISPLAYED_TRIGGERS = 20
+
         self.start_time = 0
-        self.HEART_BEATS_COUNTED = 0
-        
+
         # Initialize array to store time stamps of heartbeats
-        self.heartBeatArray = [0]*self.HEART_BEATS_TO_AVG
+        self.MAX_DISPLAYED_HEARTBEATS = 600 / 60 / self.PLOT_TIME_RANGE  # 600 BPM for max time
+        self.N_HEARTBEATS_TO_AVG = 10
+        self.MAX_TIME_BETWEEN_HEARTBEATS = 2
+        self.HEART_BEATS_COUNTED = 0
+        self.heartBeatArray = [0]*self.N_HEARTBEATS_TO_AVG
         self.heartBeatIdx = 0
         
         # Read in bore temperature data
@@ -53,7 +62,6 @@ class DataMonitoringWindow(QtGui.QWidget):
         canulaP_lin_fit = np.polyfit(canulaP_cal_raw,canulaP_cal_p,1)
         self.canulaPressureSlope = canulaP_lin_fit[0]
         self.canulaPressureIntercept = canulaP_lin_fit[1]        
-        #print "CANULA PRESSURE CALIBRATION: slope=%f intercept=%f" % (self.canulaPressureSlope, self.canulaPressureIntercept)
 
         regulatorP_cal = np.genfromtxt('regulatorPressure_calibration.csv', delimiter=',')
         regulatorP_cal_raw = regulatorP_cal[:,0]
@@ -61,8 +69,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         regulatorP_lin_fit = np.polyfit(regulatorP_cal_raw, regulatorP_cal_p,1)
         self.regulatorPressureSlope = regulatorP_lin_fit[0]
         self.regulatorPressureIntercept = regulatorP_lin_fit[1]
-        #print "REGULATOR PRESSURE CALIBRATION: slope=%f intercept=%f" % (self.regulatorPressureSlope,self.regulatorPressureIntercept)
-        
+
         # Read in volume calibration data
         oxygenV_cal = np.genfromtxt('oxygenVolume_calibration.csv', delimiter=',')
         oxygenV_cal_raw = oxygenV_cal[:,0]
@@ -70,118 +77,95 @@ class DataMonitoringWindow(QtGui.QWidget):
         oxygenV_lin_fit = np.polyfit(oxygenV_cal_raw, oxygenV_cal_p,1)
         self.oxygenVolumeSlope = oxygenV_lin_fit[0]
         self.oxygenVolumeIntercept = oxygenV_lin_fit[1]
-        #print "OXYGEN VOLUME CALIBRATION: slope=%f intercept=%f" % (self.oxygenVolumeSlope, self.oxygenVolumeIntercept)
-        
+
         nitrogenV_cal = np.genfromtxt('nitrogenVolume_calibration.csv', delimiter=',')
         nitrogenV_cal_raw = nitrogenV_cal[:,0]
         nitrogenV_cal_p = nitrogenV_cal[:,1]
         nitrogenV_lin_fit = np.polyfit(nitrogenV_cal_raw, nitrogenV_cal_p,1)
         self.nitrogenVolumeSlope = nitrogenV_lin_fit[0]
         self.nitrogenVolumeIntercept = nitrogenV_lin_fit[1]
-        #print "NITROGEN VOLUME CALIBRATION: slope=%f intercept=%f" % (self.nitrogenVolumeSlope, self.nitrogenVolumeIntercept)
-        
+
         hpGasV_cal = np.genfromtxt('hpGasVolume_calibration.csv', delimiter=',')
         hpGasV_cal_raw = hpGasV_cal[:,0]
         hpGasV_cal_p = hpGasV_cal[:,1]
         hpGasV_lin_fit = np.polyfit(hpGasV_cal_raw, hpGasV_cal_p,1)
         self.hpGasVolumeSlope = hpGasV_lin_fit[0]
         self.hpGasVolumeIntercept = hpGasV_lin_fit[1]
-        #print "HP GAS VOLUME CALIBRATION: slope=%f intercept=%f" % (self.hpGasVolumeSlope, self.hpGasVolumeIntercept)
-        
         
         # Create data fetching process
-        self.dataFetcher = df.TimedDataFetcher(self.MIN_DATA_FETCH_PERIOD)
-                
-        # Setup queues for plotting data as all NaNs
-        self.time_queue = np.zeros(self.QUEUE_SIZE)
-        self.canula_queue = np.zeros(self.QUEUE_SIZE)
-        self.ecg_queue = np.zeros(self.QUEUE_SIZE)
-        #self.temp_queue = np.zeros(self.QUEUE_SIZE)
+        self.dataFetcher = df.TimedDataFetcher(self.DATA_FETCH_PERIOD)
 
-        # Setup for slow plot data
-        self.slow_time_queue = []
-        self.slow_minPressure_queue = []
-        self.slow_maxPressure_queue = []
-        self.slow_tidalVolume_queue = []
-        
-        self.ui.fastUpdatePeriod.valueChanged.connect(self.updatePlotTimeRange)
-        self.ui.slowUpdatePeriod.valueChanged.connect(self.updateSlowPlotRefreshRate)
-        
         # Initialize graphs
-        self.ui.pressurePlot.setMouseEnabled(x=False, y=True)
-        self.ui.pressurePlot.enableAutoRange(x=False,y=True)
-        self.ui.pressurePlot.setLabel('left', "Canula Pressure", units='cmH20')
-        self.ui.pressurePlot.getAxis('left').enableAutoSIPrefix(False)
-        self.ui.pressurePlot.setLabel('bottom', "Time", units='sec')
+        self.ventilationPen = pg.mkPen({'color': "0FF"})
+        self.ui.ventilationPlot.setMouseEnabled(x=False, y=True)
+        self.ui.ventilationPlot.enableAutoRange(x=False, y=True)
+        self.ui.ventilationPlot.setLabel('left', "Canula Pressure", units='cmH20')
+        self.ui.ventilationPlot.getAxis('left').enableAutoSIPrefix(False)
+        self.ui.ventilationPlot.setLabel('bottom', "Time", units='sec')
+        self.ui.ventilationPlot.setXRange(0, self.PLOT_TIME_RANGE, padding=0)
+        self.ventilationLines = [PlotCurveItem(x=[], y=[], pen=self.ventilationPen, antialias=True) for i in range(self.FAST_PLOT_NLINES)]
+        for i in range(self.FAST_PLOT_NLINES):
+          self.ui.ventilationPlot.addItem(self.ventilationLines[i])
+
+        # Initialize a bunch of lightweight trigger lines
+        self.triggerPen = pen = pg.mkPen({'color': "F0F"})
+        self.triggerLines = [pg.InfiniteLine(pos=-1, angle=90, movable=False, pen=self.triggerPen, bounds=None) for i in range(self.MAX_TRIGGERS_DISP)]
+        self.triggerIdx = -1
+        for i in range(self.MAX_TRIGGERS_DISP):
+            self.ui.ventilationPlot.addItem(self.triggerLines[i], ignoreBounds=True)
+
+        self.ecgPen = pg.mkPen({'color': "0FF"})
         self.ui.ecgPlot.setMouseEnabled(x=False, y=True)
         self.ui.ecgPlot.enableAutoRange(x=False,y=True)
         self.ui.ecgPlot.setLabel('left', "ECG")
         self.ui.ecgPlot.getAxis('left').enableAutoSIPrefix(False)
         self.ui.ecgPlot.setLabel('bottom', "Time", units='sec')
+        self.ui.ecgPlot.setXRange(0, self.PLOT_TIME_RANGE, padding=0)
+        self.ecgLines = [PlotCurveItem(x=[], y=[], pen=self.ecgPen, antialias=True) for i in range(self.FAST_PLOT_NLINES)]
+        for i in range(self.FAST_PLOT_NLINES):
+            self.ui.ecgPlot.addItem(self.ecgLines[i])
+
+        self.accum_time_vec = []
+        self.accum_vent_vec = []
+        self.accum_ecg_vec = []
+
+        # Initialize a bunch of lightweight heartbeat lines
+        self.heartBeatPen = pen = pg.mkPen({'color': "C00"})
+        self.heartBeatLines = [pg.InfiniteLine(pos=-1, angle=90, movable=False, pen=self.heartBeatPen, bounds=None) for i in range(self.MAX_HEARTBEAT_DISP)]
+        self.heartBeatLine_Idx = -1
+        for i in range(self.MAX_HEARTBEAT_DISP):
+            self.ui.ecgPlot.addItem(self.heartBeatLines[i], ignoreBounds=True)
+
         self.minXlim = 0
         self.updatePlotTimeRange()
         self.updateSlowPlotRefreshRate()
         self.maxXlim = self.minXlim + self.PLOT_TIME_RANGE
-        self.ui.pressurePlot.setXRange(0,self.PLOT_TIME_RANGE,padding=0)
-        self.ui.ecgPlot.setXRange(0,self.PLOT_TIME_RANGE,padding=0)
-        
-        # Initialize pressure line
-        self.pressureLine = pg.PlotCurveItem(x=[],y=[], \
-           pen=pg.mkPen({'color': "0FF"}),antialias=True)
-        self.ui.pressurePlot.addItem(self.pressureLine)
-        
-        # Initialize a bunch of lightweight trigger lines
-        self.triggerPen = pen=pg.mkPen({'color': "F0F"})
-        self.triggerLines = [ pg.InfiniteLine(pos=-1,angle=90,movable=False, \
-           pen=self.triggerPen,bounds=None) for i in range(self.MAX_TRIGGERS_DISP)]
-        self.triggerIdx = -1;
-        for i in range(self.MAX_TRIGGERS_DISP):
-          self.ui.pressurePlot.addItem(self.triggerLines[i],ignoreBounds=True)
-        
-        # Initialize ECG line
-        self.ecgLine = pg.PlotCurveItem(x=[],y=[], \
-           pen=pg.mkPen({'color': "0FF"}),antialias=True)
-        self.ui.ecgPlot.addItem(self.ecgLine)
-        
-        # Initialize a bunch of lightweight heartbeat lines
-        self.heartBeatPen = pen=pg.mkPen({'color': "C00"})
-        self.heartBeatLines = [ pg.InfiniteLine(pos=-1,angle=90,movable=False, \
-           pen=self.heartBeatPen,bounds=None) for i in range(self.MAX_HEARTBEAT_DISP)]
-        self.heartBeatLine_Idx = -1
-        for i in range(self.MAX_HEARTBEAT_DISP):
-          self.ui.ecgPlot.addItem(self.heartBeatLines[i],ignoreBounds=True)
-        
+
         # Initialize Min and Max pressure axis
         self.pressureSlowPlot = self.ui.vitalsPlot.plotItem
         self.pressureSlowPlot.getAxis('left').setLabel("Canula Pressure", units='cmH20')
         self.pressureSlowPlot.getAxis('left').enableAutoSIPrefix(False)
 
         # Add empty lines
-        self.minPressureLine = pg.PlotCurveItem(x=[],y=[], \
-           pen=pg.mkPen({'color': "FFF"}),antialias=True)
-        self.maxPressureLine = pg.PlotCurveItem(x=[],y=[], \
-           pen=pg.mkPen({'color': "FFF"}),antialias=True)
+        self.pressureLinePen = pg.mkPen({'color': "FFF"}) # TODO consolidate all pens
+        self.minPressureLine = pg.PlotCurveItem(x=[],y=[], pen=self.pressureLinePen,antialias=True)
+        self.maxPressureLine = pg.PlotCurveItem(x=[],y=[], pen=self.pressureLinePen,antialias=True)
         self.pressureSlowPlot.addItem(self.minPressureLine)
         self.pressureSlowPlot.addItem(self.maxPressureLine)
                        
         # Add heart rate axis
+        self.heartRatePen = pg.mkPen({'color': "C00"},width=2)
         self.pressureSlowPlot.showAxis('right')
         self.pressureSlowPlot.getAxis('right').setLabel("Heart Rate", units='BPM')
-        self.hearRatePen = pg.mkPen({'color': "C00"},width=2)
-        self.pressureSlowPlot.getAxis('right').setPen(self.hearRatePen)
-        
+        self.pressureSlowPlot.getAxis('right').setPen(self.heartRatePen)
         self.heartrateSlowPlot = pg.ViewBox()
         self.pressureSlowPlot.scene().addItem(self.heartrateSlowPlot)
         self.pressureSlowPlot.getAxis('right').linkToView(self.heartrateSlowPlot)
         self.heartrateSlowPlot.setXLink(self.pressureSlowPlot)
-                
-        # Add empty heart rate line
-        self.heartRateLine = pg.PlotCurveItem(x=[5,20],y=[1,0], \
-           pen=self.hearRatePen,antialias=True)
-
+        self.heartRateLine = pg.PlotCurveItem(x=[],y=[], pen=self.hearRatePen,antialias=True)# TODO make incremental lines
         self.heartrateSlowPlot.addItem(self.heartRateLine)
 
-        # Add temperature axis to right
+        # Add temperature axis
         self.temperatureAxis = pg.AxisItem('right')
         self.temperatureAxis.setLabel('Temperature','C')
         self.temperaturePen = pg.mkPen({'color': "0C0"},width=2)
@@ -191,31 +175,31 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.pressureSlowPlot.scene().addItem(self.temperatureViewbox)
         self.temperatureAxis.linkToView(self.temperatureViewbox)
         self.temperatureViewbox.setXLink(self.pressureSlowPlot)
-
-        # Add empty heart rate line
-        self.temperatureLine = pg.PlotCurveItem(x=[1,5],y=[0,5], \
-           pen=self.temperaturePen,antialias=True)
+        self.temperatureLine = pg.PlotCurveItem(x=[],y=[], pen=self.temperaturePen,antialias=True)
         self.temperatureViewbox.addItem(self.temperatureLine)
 
         self.updateViews();
         self.pressureSlowPlot.vb.sigResized.connect(self.updateViews)
         
         # Setup dynamic plotting process
+        # TODO make this plot as fast as possible
         self.isGraphing = False
         self.timer = pg.QtCore.QTimer()
         self.timer.timeout.connect(self.updateUI) 
         self.timer.start(self.MIN_PLOT_UPDATE_PERIOD)  
-        
+
+        # Listen to events from plot time range drop down menus
+        self.ui.fastUpdatePeriod.valueChanged.connect(self.updatePlotTimeRange)
+        self.ui.slowUpdatePeriod.valueChanged.connect(self.updateSlowPlotRefreshRate)
+
         # Set GPIO mode to board so things go smoothly with RPi upgrades
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(5, GPIO.IN)
         GPIO.add_event_detect(5, GPIO.BOTH, callback=self.hpVsO2Changed, bouncetime=500)
         GPIO.setup(13, GPIO.IN)
         GPIO.add_event_detect(13, GPIO.BOTH, callback=self.triggerChanged, bouncetime=500)
-        
         GPIO.setup(26, GPIO.IN)
         GPIO.add_event_detect(26, GPIO.BOTH, callback=self.heartBeatDetected, bouncetime=500)
-        
         self.nitrogenModeOn = GPIO.input(5)
         
     def updateViews(self):
@@ -223,7 +207,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.heartrateSlowPlot.linkedViewChanged(self.pressureSlowPlot.getViewBox(),self.heartrateSlowPlot.XAxis)
         self.temperatureViewbox.setGeometry(self.pressureSlowPlot.getViewBox().sceneBoundingRect())
         self.temperatureViewbox.linkedViewChanged(self.pressureSlowPlot.getViewBox(),self.temperatureViewbox.XAxis)
-        
+        # TODO start here
     def heartBeatDetected(self, chan):
        trig_time = time.time() - self.start_time
        self.HEART_BEATS_COUNTED = self.HEART_BEATS_COUNTED + 1
@@ -282,7 +266,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         
         # Update axes
         self.maxXlim = self.minXlim + self.PLOT_TIME_RANGE
-        self.ui.pressurePlot.setXRange(self.minXlim,self.maxXlim,padding=0)
+        self.ui.ventilationPlot.setXRange(self.minXlim, self.maxXlim, padding=0)
         
     def startGraphing(self):
         if (not self.isGraphing):
@@ -302,7 +286,6 @@ class DataMonitoringWindow(QtGui.QWidget):
             self.timer.stop()
               
     def updateUI(self):
-        
         elapsed_time = time.time() - self.start_time
           
         # Under lock, find how much data we have to read
@@ -319,52 +302,76 @@ class DataMonitoringWindow(QtGui.QWidget):
         
         # We can now copy from the buffer safely.
         if(nDataToRead > 0):
-          copyIdx = 0
-          for i in range(startRead,stopReading): 
-              self.time_queue[copyIdx] = self.dataFetcher.sync_time_buf[i]
-              self.canula_queue[copyIdx] = self.canulaPressureSlope*self.dataFetcher.sync_canula_buf[i]+self.canulaPressureIntercept
-              self.ecg_queue[copyIdx] = self.dataFetcher.sync_ecg_buf[i]
-              #self.temp_queue[copyIdx] = self.dataFetcher.sync_temp_buf[i]
-              copyIdx += 1
+          temp_time_queue[0:(stopReading-startRead-1)] = self.dataFetcher.sync_time_buf[startRead:(stopReading-1)]
+          temp_canula_queue[0:(stopReading-startRead-1)] = self.canulaPressureSlope*self.dataFetcher.sync_canula_buf[startRead:(stopReading-1)]+self.canulaPressureIntercept
+          temp_ecg_queue[0:(stopReading-startRead-1)] = self.dataFetcher.sync_ecg_buf[startRead:(stopReading-1)]
         
           # In case data has wrapped... read the wrapped data too
           if(endRead <= startRead):
-            for i in range(0,endRead):
-              self.time_queue[copyIdx] = self.dataFetcher.sync_time_buf[i]
-              self.canula_queue[copyIdx] = self.canulaPressureSlope*self.dataFetcher.sync_canula_buf[i]+self.canulaPressureIntercept
-              self.ecg_queue[copyIdx] = self.dataFetcher.sync_ecg_buf[i]
-              #self.temp_queue[copyIdx] = self.dataFetcher.sync_temp_buf[i]
-              copyIdx += 1
-          
+            temp_time_queue[stopReading:(stopReading+endRead-1)] = self.dataFetcher.sync_time_buf[0:(endRead-1)]
+            temp_canula_queue[stopReading:(stopReading+endRead-1)] = self.canulaPressureSlope*self.dataFetcher.sync_canula_buf[0:(endRead-1)]+self.canulaPressureIntercept
+            temp_ecg_queue[stopReading:(stopReading+endRead-1)] = self.dataFetcher.sync_ecg_buf[0:(endRead-1)]
+
           # Data is copied, so move pointer to free up buffer space under lock
           self.dataFetcher.indexLock.acquire()
           self.dataFetcher.sync_bufferStartIdx.value = endRead
           self.dataFetcher.sync_bufferLength.value = self.dataFetcher.sync_bufferLength.value - nDataToRead 
-          #self.dataFetcher.sync_bufferFull.value = 0
           self.dataFetcher.indexLock.release()
     
           # Now we can take all the time we want to plot the data; the 
           # fetching process will keep taking new data while this slow plot 
           # operation occurs. Nevertheless, we try to update the plotted 
           # line quickly 
-        
-          # Roll data to put newest data last
-          self.time_queue = np.roll(self.time_queue,-nDataToRead)
-          self.canula_queue = np.roll(self.canula_queue,-nDataToRead)
-          self.ecg_queue = np.roll(self.ecg_queue,-nDataToRead)
-          #self.temp_queue = np.roll(self.temp_queue,-nDataToRead)
-                
-          # Show the new data
-          self.pressureLine.setData(self.time_queue,self.canula_queue)
-          self.ecgLine.setData(self.time_queue,self.ecg_queue)
-          
+
+          startReadPosition = 0
+          while(nDataToRead > 0):
+              spaceLeftInLine = self.FAST_PLOT_LINE_LENGTH-self.FAST_PLOT_POSITION_IDX
+
+              # TODO Make sure this works to get data
+              self.accum_time_vec = self.ventilationLines[self.FAST_PLOT_LINE_IDX].xData
+              self.accum_vent_vec = self.ventilationLines[self.FAST_PLOT_LINE_IDX].yData
+              self.accum_ecg_vec = self.ecgLines[self.FAST_PLOT_LINE_IDX].yData
+
+              while(nDataToRead >= spaceLeftInLine):
+                dataToAddToThisLine = min(nDataToRead,spaceLeftInLine)
+                self.accum_time_vec = [self.accum_time_vec temp_time_queue[startReadPosition:(startReadPosition + dataToAddToThisLine - 1)]]
+                self.accum_vent_vec = [self.accum_vent_vec temp_canula_queue[startReadPosition:(startReadPosition + dataToAddToThisLine - 1)]]
+                self.accum_ecg_vec = [self.accum_ecg_vec temp_ecg_queue[startReadPosition:(startReadPosition + dataToAddToThisLine - 1)]]
+
+                # Plot new data
+                self.ecgLines[self.FAST_PLOT_LINE_IDX].setData(self.accum_time_vec,self.accum_ecg_vec)
+                self.ventilationLines[self.FAST_PLOT_LINE_IDX].setData(self.accum_time_vec,self.accum_ecg_vec)
+
+                # Update to next line
+                self.accum_time_vec = self.accum_time_vec[self.FAST_PLOT_POSITION_IDX-1]
+                self.accum_vent_vec = self.accum_vent_vec[self.FAST_PLOT_POSITION_IDX-1]
+                self.accum_ecg_vec = self.accum_ecg_vec[self.FAST_PLOT_POSITION_IDX-1]
+                self.FAST_PLOT_LINE_IDX = self.FAST_PLOT_LINE_IDX + 1
+                self.FAST_PLOT_POSITION_IDX = 1 # First index is taken up by previous line's last point to connect them
+
+                # Update ammount of data to plot
+                nDataToRead = nDataToRead - dataToAddToThisLine
+
+              # Add last little bit of data
+              if(nDataToRead > 0):
+                self.accum_time_vec = [self.accum_time_vectemp_time_queue[startReadPosition:(startReadPosition + nDataToRead - 1)]]
+                self.accum_vent_vec = [self.accum_vent_vectemp_canula_queue[startReadPosition:(startReadPosition + nDataToRead - 1)]]
+                self.accum_ecg_vec = [self.accum_ecg_vec temp_ecg_queue[startReadPosition:(startReadPosition + nDataToRead - 1)]]
+
+                # Plot new data
+                self.ecgLines[self.FAST_PLOT_LINE_IDX].setData(self.accum_time_vec, self.accum_ecg_vec)
+                self.ventilationLines[self.FAST_PLOT_LINE_IDX].setData(self.accum_time_vec, self.accum_ecg_vec)
+
+                # Update position index
+                self.FAST_PLOT_POSITION_IDX = self.FAST_PLOT_POSITION_IDX + nDataToRead
+
         # Update time axis if necessary
         if(elapsed_time > self.maxXlim):
             # Update axes
             while(elapsed_time > self.maxXlim):
               self.minXlim += self.TIME_SHIFT_PCT*self.PLOT_TIME_RANGE
               self.maxXlim = self.minXlim + self.PLOT_TIME_RANGE
-            self.ui.pressurePlot.setXRange(self.minXlim,self.maxXlim,padding=0) 
+            self.ui.ventilationPlot.setXRange(self.minXlim, self.maxXlim, padding=0)
             self.ui.ecgPlot.setXRange(self.minXlim,self.maxXlim,padding=0) 
             
         # Update text and slow graph
@@ -397,19 +404,9 @@ class DataMonitoringWindow(QtGui.QWidget):
           if(elapsed_time > self.NEXT_TEXT_UPDATE):
             while(elapsed_time > self.NEXT_TEXT_UPDATE):
                 self.NEXT_TEXT_UPDATE += self.TEXT_UPDATE_PERIOD
-            self.slow_time_queue.append(elapsed_time)
-            self.slow_minPressure_queue.append(min_val)
-            self.slow_maxPressure_queue.append(max_val)
-            self.slow_tidalVolume_queue.append(tidal_vol)
-            self.minPressureLine.setData(self.slow_time_queue,self.slow_minPressure_queue)
-            self.maxPressureLine.setData(self.slow_time_queue,self.slow_maxPressure_queue)
-            #self.tidalVolumeLine.setData(self.slow_time_queue,self.slow_tidalVolume_queue)
-            #print "TIDAL VOLS:", self.slow_tidalVolume_queue
-            
             self.ui.nitrogenText.setPlainText("Nitrogen\nP: %3.1f psi  V: %4.2f mL" % (nitrogen_pressure,nitrogen_volume)) 
             self.ui.oxygenText.setPlainText("Oxygen\nP: %3.1f psi  V: %4.2f mL" % (oxygen_pressure,oxygen_volume)) 
-            self.ui.hpText.setPlainText("HP Gas\nP: %3.1f psi  V: %4.2f mL" % (hpGas_pressure,hpGas_volume)) 
-            
+            self.ui.hpText.setPlainText("HP Gas\nP: %3.1f psi  V: %4.2f mL" % (hpGas_pressure,hpGas_volume))
             self.ui.canulaText.setPlainText("Canula\nPmax: %3.1f cmH20\nPmin: %3.1f cmH20\nTV  : %4.2f mL" % (max_val, min_val,tidal_vol))  
             self.ui.modeText.setPlainText(mode_string)    
 
@@ -421,35 +418,74 @@ class DataMonitoringWindow(QtGui.QWidget):
                self.heartBeatIdx = 0 #Reset
             
             if(self.HEART_BEATS_COUNTED == 0):
-                 self.ui.heartRateText.setPlainText("Heart Rate: NOT DETECTED");
+              self.ui.heartRateText.setPlainText("Heart Rate: NOT DETECTED");
+              if (self.CURRENT_HEARTRATE_COUNT != 0)
+                self.CURRENT_HEARTRATE_DATA = []
+                self.CURRENT_HEARTRATE_TIME = []
+                self.CURRENT_HEARTRATE_COUNT = 0
+                self.CURRENT_HEARTRATE_LINE = pg.PlotCurveItem(x=[], y=[], pen=self.heartRatePen,antialias=True)
             elif(self.HEART_BEATS_COUNTED < self.HEART_BEATS_TO_AVG):
-                self.ui.heartRateText.setPlainText("Heart Rate: Calculating");
+              self.ui.heartRateText.setPlainText("Heart Rate: Calculating");
+              if(self.CURRENT_HEARTRATE_COUNT != 0)
+                self.CURRENT_HEARTRATE_DATA = []
+                self.CURRENT_HEARTRATE_TIME = []
+                self.CURRENT_HEARTRATE_COUNT = 0
+                self.CURRENT_HEARTRATE_LINE = pg.PlotCurveItem(x=[], y=[], pen=self.heartRatePen,antialias=True)
             else:
-                # Calculate and update heart rate
-                timeForAllBeats = (max(self.heartBeatArray) - min(self.heartBeatArray))
-                if(timeForAllBeats > 0):
-                  
-                  heartRate = 60*(self.HEART_BEATS_TO_AVG-1) / timeForAllBeats
-                  #print "HEART BEATS:"
-                  #print self.heartBeatArray
-                  #print "MAX: %5.3f  MIN: %5.3f" % (max(self.heartBeatArray), min(self.heartBeatArray))
-                  #print "TIME FOR ALL BEATS: %5.3f" % timeForAllBeats
-                  #print "heartRate = %8.3f" % heartRate
-                  #print "+++++++++++++++++++++++++"
+              # Calculate and update heart rate
+              timeForAllBeats = (max(self.heartBeatArray) - min(self.heartBeatArray))
+              if(timeForAllBeats > 0):
+                heartRate = 60*(self.HEART_BEATS_TO_AVG-1) / timeForAllBeats
+                heart_rate_string = "Heart Rate: %4.1f BPM" % heartRate
+                self.ui.heartRateText.setPlainText(heart_rate_string)
 
-                  heart_rate_string = "Heart Rate: %4.1f BPM" % heartRate
-                  self.ui.heartRateText.setPlainText(heart_rate_string);
-            
-            # Calculate Temperatures            
-            bore_temp = np.polyval(self.tempSensor_fit,self.dataFetcher.getDataFromChannel(7))
-            animal_temp = np.polyval(self.tempSensor_fit,self.dataFetcher.getDataFromChannel(6))
-            tempTextString = "Bore Temp: %4.1f\nAnimal Temp: %4.1f" % (bore_temp, animal_temp)
-            self.ui.temperatureText.setPlainText(tempTextString)
-                    
+                self.CURRENT_HEARTRATE_DATA.append(heartRate)
+                self.CURRENT_HEARTRATE_TIME.append(elapsed_time)
+                self.CURRENT_HEARTRATE_COUNT = self.CURRENT_HEARTRATE_COUNT + 1
+                if(self.CURRENT_HEARTRATE_COUNT > 1):
+                  self.CURRENT_HEARTRATE_LINE.setData(self.CURRENT_HEARTRATE_TIME, self.CURRENT_HEARTRATE_DATA)
+                if(self.CURRENT_HEARTRATE_COUNT == (self.SLOW_PLOT_LINE_LENGTH - 1)):
+                  self.CURRENT_HEARTRATE_DATA = [heartRate]
+                  self.CURRENT_HEARTRATE_TIME = [elapsed_time]
+                  self.CURRENT_HEARTRATE_COUNT = 1
+                  self.CURRENT_HEARTRATE_LINE = pg.PlotCurveItem(x=[], y=[], pen=self.heartRatePen,antialias=True)
+
+            # Calculate Temperatures
+            bore_temp_celcius = np.polyval(self.tempSensor_fit, self.dataFetcher.getDataFromChannel(7))
+            animal_temp_celcius = np.polyval(self.tempSensor_fit, self.dataFetcher.getDataFromChannel(6))
+            tempTextString_celcius = u"Bore Temp: %4.1f (\u00B0C)\nAnimal Temp: %4.1f (\u00B0C)" % (bore_temp_celcius, animal_temp_celcius)
+            # self.ui.temperatureText.setPlainText(tempTextString_fahrenheit)
+
+            bore_temp_fahrenheit = bore_temp_celcius*(9/5)+32
+            animal_temp_fahrenheit = animal_temp_celcius * (9/5) + 32
+            tempTextString_fahrenheit = u"Bore Temp: %4.1f (\u00B0C)\nAnimal Temp: %4.1f (\u00B0C)" % (bore_temp_fahrenheit, animal_temp_fahrenheit)
+            self.ui.temperatureText.setPlainText(tempTextString_fahrenheit)
+
+            self.CURRENT_TIME_DATA.append(elapsed_time)
+            self.CURRENT_MAX_PRESSURE_DATA.append(max_val)
+            self.CURRENT_MIN_PRESSURE_DATA.append(min_val)
+            self.CURRENT_TEMPERATURE_DATA.append(animal_temp_fahrenheit)
+
+            self.CURRENT_MIN_PRESSURE_LINE.setData(self.CURRENT_TIME_DATA, self.CURRENT_MIN_PRESSURE_DATA)
+            self.CURRENT_MAX_PRESSURE_LINE.setData(self.CURRENT_TIME_DATA, self.CURRENT_MAX_PRESSURE_DATA)
+            self.CURRENT_TEMPERATURE_LINE.setData(self.CURRENT_TIME_DATA, self.CURRENT_TEMPERATURE_DATA)
+            self.SLOW_PLOT_LINE_IDX = self.SLOW_PLOT_LINE_IDX + 1
+
+            if (self.SLOW_PLOT_LINE_IDX == (self.SLOW_PLOT_LINE_LENGTH - 1)):
+                # Initialize next data with current values so lines conect
+                self.CURRENT_TIME_DATA = [elapsed_time]
+                self.CURRENT_MAX_PRESSURE_DATA = [max_val]
+                self.CURRENT_MIN_PRESSURE_DATA = [min_val]
+                self.CURRENT_TEMPERATURE_DATA = [animal_temp_fahrenheit]
+
+                self.CURRENT_MIN_PRESSURE_LINE = pg.PlotCurveItem(x=[], y=[], pen=self.pressureLinePen, antialias=True)
+                self.CURRENT_MAX_PRESSURE_LINE = pg.PlotCurveItem(x=[], y=[], pen=self.pressureLinePen, antialias=True)
+                self.CURRENT_TEMPERATURE_LINE = pg.PlotCurveItem(x=[], y=[], pen=self.temperaturePen, antialias=True)
+                self.SLOW_PLOT_LINE_IDX = 1  # RESET
+
     def closeEvent(self, ce):
         self.stopGraphing()
         self.dataFetcher.stopFetching()    
-        
 
 ## Start Qt event loop unless running in interactive mode.
 if __name__ == '__main__':
@@ -460,4 +496,3 @@ if __name__ == '__main__':
         win.show()
         win.startGraphing()
         sys.exit(app.exec_())
-
