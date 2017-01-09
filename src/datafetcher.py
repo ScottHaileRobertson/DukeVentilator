@@ -18,7 +18,7 @@ class TimedDataFetcher:
     
     # Create lock to prevent clashes between graphing/fetching processes
     self.indexLock = mp.Lock()
-
+ 
     # Setup an array to buffer values that are read off the pressure monitors 
     self.indexLock.acquire()
     
@@ -88,7 +88,7 @@ class TimedDataFetcher:
       #self.csvwriter.writerow([t_stamp,canula,o2,n2,hp,ecg,temp,
             
       time.sleep(self.FETCHPERIOD) 
-      
+    
   def startFetching(self):
       if not self.isFetching:
           #self.csvfile = open('DukeVentilatorData.csv','w')
@@ -103,5 +103,3 @@ class TimedDataFetcher:
           self.fetch_process.join()
           self.isFetching = False
           #self.csvfile.close()
-  
-
