@@ -210,8 +210,8 @@ class DataMonitoringWindow(QtGui.QWidget):
         GPIO.add_event_detect(5, GPIO.BOTH, callback=self.hpVsO2Changed, bouncetime=500)
         GPIO.setup(13, GPIO.IN)
         GPIO.add_event_detect(13, GPIO.BOTH, callback=self.triggerChanged, bouncetime=500)
-        GPIO.setup(26, GPIO.IN)
-        GPIO.add_event_detect(26, GPIO.BOTH, callback=self.heartBeatDetected, bouncetime=500)
+        GPIO.setup(19, GPIO.IN)
+        GPIO.add_event_detect(19, GPIO.BOTH, callback=self.heartBeatDetected, bouncetime=500)
         self.nitrogenModeOn = GPIO.input(5)
 
     def updateViews(self):
