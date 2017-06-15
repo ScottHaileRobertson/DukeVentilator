@@ -41,10 +41,10 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.heartBeatIdx = 0
         
         # Read in bore temperature data
-        tempSensor_cal = np.genfromtxt('temperature_calibration.csv', delimiter=',')
-        tempSensor_cal_raw = tempSensor_cal[:,0]
-        tempSensor_cal_temp = tempSensor_cal[:,1]
-        self.tempSensor_fit = np.polyfit(tempSensor_cal_temp, tempSensor_cal_raw, 3)
+        # tempSensor_cal = np.genfromtxt('temperature_calibration.csv', delimiter=',')
+        # tempSensor_cal_raw = tempSensor_cal[:,0]
+        # tempSensor_cal_temp = tempSensor_cal[:,1]
+        # self.tempSensor_fit = np.polyfit(tempSensor_cal_temp, tempSensor_cal_raw, 3)
         
         # Read in pressure calibration data
         canulaP_cal = np.genfromtxt('canulaPressure_calibration.csv', delimiter=',')
@@ -215,20 +215,20 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.heartrateSlowPlot.addItem(self.heartRateLine)
 
         # Add temperature axis to right
-        self.temperatureAxis = pg.AxisItem('right')
-        self.temperatureAxis.setLabel('Temperature','C')
-        self.temperaturePen = pg.mkPen({'color': "0C0"},width=2)
-        self.temperatureAxis.setPen(self.temperaturePen)
-        self.temperatureViewbox = pg.ViewBox()
-        self.pressureSlowPlot.layout.addItem(self.temperatureAxis,2,3)
-        self.pressureSlowPlot.scene().addItem(self.temperatureViewbox)
-        self.temperatureAxis.linkToView(self.temperatureViewbox)
-        self.temperatureViewbox.setXLink(self.pressureSlowPlot)
+        # self.temperatureAxis = pg.AxisItem('right')
+        # self.temperatureAxis.setLabel('Temperature','C')
+        # self.temperaturePen = pg.mkPen({'color': "0C0"},width=2)
+        # self.temperatureAxis.setPen(self.temperaturePen)
+        # self.temperatureViewbox = pg.ViewBox()
+        # self.pressureSlowPlot.layout.addItem(self.temperatureAxis,2,3)
+        # self.pressureSlowPlot.scene().addItem(self.temperatureViewbox)
+        # self.temperatureAxis.linkToView(self.temperatureViewbox)
+        # self.temperatureViewbox.setXLink(self.pressureSlowPlot)
 
         # Add empty heart rate line
-        self.temperatureLine = pg.PlotCurveItem(x=[1,5],y=[0,5], \
+        # self.temperatureLine = pg.PlotCurveItem(x=[1,5],y=[0,5], \
            pen=self.temperaturePen,antialias=True)
-        self.temperatureViewbox.addItem(self.temperatureLine)
+        # self.temperatureViewbox.addItem(self.temperatureLine)
 
         self.updateViews();
         self.pressureSlowPlot.vb.sigResized.connect(self.updateViews)
@@ -254,8 +254,8 @@ class DataMonitoringWindow(QtGui.QWidget):
     def updateViews(self):
         self.heartrateSlowPlot.setGeometry(self.pressureSlowPlot.getViewBox().sceneBoundingRect())
         self.heartrateSlowPlot.linkedViewChanged(self.pressureSlowPlot.getViewBox(),self.heartrateSlowPlot.XAxis)
-        self.temperatureViewbox.setGeometry(self.pressureSlowPlot.getViewBox().sceneBoundingRect())
-        self.temperatureViewbox.linkedViewChanged(self.pressureSlowPlot.getViewBox(),self.temperatureViewbox.XAxis)
+        # self.temperatureViewbox.setGeometry(self.pressureSlowPlot.getViewBox().sceneBoundingRect())
+        # self.temperatureViewbox.linkedViewChanged(self.pressureSlowPlot.getViewBox(),self.temperatureViewbox.XAxis)
         
     def heartBeatDetected(self, chan):
        trig_time = time.time() - self.start_time
@@ -479,10 +479,10 @@ class DataMonitoringWindow(QtGui.QWidget):
                   
             
             # Calculate Temperatures            
-            bore_temp = np.polyval(self.tempSensor_fit,self.dataFetcher.getDataFromChannel(7))
-            animal_temp = np.polyval(self.tempSensor_fit,self.dataFetcher.getDataFromChannel(6))
-            tempTextString = "Bore Temp: %4.1f\nAnimal Temp: %4.1f" % (bore_temp, animal_temp)
-            self.ui.temperatureText.setPlainText(tempTextString)
+            # bore_temp = np.polyval(self.tempSensor_fit,self.dataFetcher.getDataFromChannel(7))
+            # animal_temp = np.polyval(self.tempSensor_fit,self.dataFetcher.getDataFromChannel(6))
+            # tempTextString = "Bore Temp: %4.1f\nAnimal Temp: %4.1f" % (bore_temp, animal_temp)
+            # self.ui.temperatureText.setPlainText(tempTextString)
                     
     def closeEvent(self, ce):
         self.stopGraphing()
