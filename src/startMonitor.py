@@ -55,14 +55,30 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.canulaPressureIntercept = canulaP_lin_fit[1]        
         #print "CANULA PRESSURE CALIBRATION: slope=%f intercept=%f" % (self.canulaPressureSlope, self.canulaPressureIntercept)
 
-        regulatorP_cal = np.genfromtxt('regulatorPressure_calibration.csv', delimiter=',')
-        regulatorP_cal_raw = regulatorP_cal[:,0]
-        regulatorP_cal_p = regulatorP_cal[:,1]
-        regulatorP_lin_fit = np.polyfit(regulatorP_cal_raw, regulatorP_cal_p,1)
-        self.regulatorPressureSlope = regulatorP_lin_fit[0]
-        self.regulatorPressureIntercept = regulatorP_lin_fit[1]
-        #print "REGULATOR PRESSURE CALIBRATION: slope=%f intercept=%f" % (self.regulatorPressureSlope,self.regulatorPressureIntercept)
+        oxygenP_cal = np.genfromtxt('oxygenPressure_calibration.csv', delimiter=',')
+        oxygenP_cal_raw = oxygenP_cal[:,0]
+        oxygenP_cal_p = oxygenP_cal[:,1]
+        oxygenP_lin_fit = np.polyfit(oxygenP_cal_raw, oxygenP_cal_p,1)
+        self.oxygenPressureSlope = oxygenP_lin_fit[0]
+        self.oxygenPressureIntercept = oxygenP_lin_fit[1]
+        #print "OXYGEN PRESSURE CALIBRATION: slope=%f intercept=%f" % (self.oxygenPressureSlope,self.oxygenPressureIntercept)
         
+        nitrogenP_cal = np.genfromtxt('nitrogenPressure_calibration.csv', delimiter=',')
+        nitrogenP_cal_raw = nitrogenP_cal[:,0]
+        nitrogenP_cal_p = nitrogenP_cal[:,1]
+        nitrogenP_lin_fit = np.polyfit(nitrogenP_cal_raw, nitrogenP_cal_p,1)
+        self.nitrogenPressureSlope = nitrogenP_lin_fit[0]
+        self.nitrogenPressureIntercept = nitrogenP_lin_fit[1]
+        #print "NITROGEN PRESSURE CALIBRATION: slope=%f intercept=%f" % (self.nitrogenPressureSlope,self.nitrogenPressureIntercept)
+        
+        hpGasP_cal = np.genfromtxt('hpGasPressure_calibration.csv', delimiter=',')
+        hpGasP_cal_raw = hpGasP_cal[:,0]
+        hpGasP_cal_p = hpGasP_cal[:,1]
+        hpGasP_lin_fit = np.polyfit(hpGasP_cal_raw, hpGasP_cal_p,1)
+        self.hpGasPressureSlope = hpGasP_lin_fit[0]
+        self.hpGasPressureIntercept = hpGasP_lin_fit[1]
+        #print "HP GAS PRESSURE CALIBRATION: slope=%f intercept=%f" % (self.hpGasPressureSlope,self.hpGasPressureIntercept)
+
         # Read in volume calibration data
         oxygenV_cal = np.genfromtxt('oxygenVolume_calibration.csv', delimiter=',')
         oxygenV_cal_raw = oxygenV_cal[:,0]
@@ -375,9 +391,9 @@ class DataMonitoringWindow(QtGui.QWidget):
           max_val = max(self.canula_queue)
 
           # Calculate pressures
-          oxygen_pressure = self.regulatorPressureSlope*self.dataFetcher.getDataFromChannel(1)+self.regulatorPressureIntercept
-          nitrogen_pressure = self.regulatorPressureSlope*self.dataFetcher.getDataFromChannel(2)+self.regulatorPressureIntercept
-          hpGas_pressure = self.regulatorPressureSlope*self.dataFetcher.getDataFromChannel(3)+self.regulatorPressureIntercept
+          oxygen_pressure = self.oxygenPressureSlope*self.dataFetcher.getDataFromChannel(1)+self.oxygenPressureIntercept
+          nitrogen_pressure = self.nitrogenPressureSlope*self.dataFetcher.getDataFromChannel(2)+self.nitrogenPressureIntercept
+          hpGas_pressure = self.nitrogenPressureSlope*self.dataFetcher.getDataFromChannel(3)+self.nitrogenPressureIntercept
         
           # Calculate volumes
           oxygen_volume = oxygen_pressure*self.oxygenVolumeSlope + self.oxygenVolumeIntercept
