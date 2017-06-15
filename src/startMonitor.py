@@ -178,7 +178,7 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.heartrateSlowPlot.setXLink(self.pressureSlowPlot)
                 
         # Add empty heart rate line
-        self.heartRateLine = pg.PlotCurveItem(x=[5,20],y=[1,0], \
+        self.heartRateLine = pg.PlotCurveItem(x=[],y=[], \
            pen=self.hearRatePen,antialias=True)
 
         self.heartrateSlowPlot.addItem(self.heartRateLine)
