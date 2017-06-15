@@ -154,6 +154,7 @@ class DataMonitoringWindow(QtGui.QWidget):
            pen=self.triggerPen,bounds=None) for i in range(self.MAX_TRIGGERS_DISP)]
         self.triggerIdx = -1;
         for i in range(self.MAX_TRIGGERS_DISP):
+          #self.triggerLines[i].setValue(i)
           self.ui.pressurePlot.addItem(self.triggerLines[i],ignoreBounds=True)
         
         # Initialize ECG line
@@ -167,18 +168,32 @@ class DataMonitoringWindow(QtGui.QWidget):
            pen=self.heartBeatPen,bounds=None) for i in range(self.MAX_HEARTBEAT_DISP)]
         self.heartBeatLine_Idx = -1
         for i in range(self.MAX_HEARTBEAT_DISP):
+          #self.ecgLines[i].setValue(i)
           self.ui.ecgPlot.addItem(self.heartBeatLines[i],ignoreBounds=True)
         
         # Initialize Min and Max pressure axis
         self.pressureSlowPlot = self.ui.vitalsPlot.plotItem
         self.pressureSlowPlot.getAxis('left').setLabel("Canula Pressure", units='cmH20')
         self.pressureSlowPlot.getAxis('left').enableAutoSIPrefix(False)
-
+        #self.pressureSlowPlot.showAxis('right')
+                
+        # Add tidal volume axis
+        #self.tidalVolumeSlowPlot = pg.ViewBox()
+        #self.pressureSlowPlot.scene().addItem(self.tidalVolumeSlowPlot)
+        #self.pressureSlowPlot.getAxis('right').linkToView(self.tidalVolumeSlowPlot)
+        #self.tidalVolumeSlowPlot.setXLink(self.pressureSlowPlot)
+        #self.pressureSlowPlot.getAxis('right').setLabel("Tidal Volume", units='mL')
+        
+        #self.updateViews();
+        #self.pressureSlowPlot.vb.sigResized.connect(self.updateViews)
+        
         # Add empty lines
         self.minPressureLine = pg.PlotCurveItem(x=[],y=[], \
            pen=pg.mkPen({'color': "FFF"}),antialias=True)
         self.maxPressureLine = pg.PlotCurveItem(x=[],y=[], \
            pen=pg.mkPen({'color': "FFF"}),antialias=True)
+        #self.tidalVolumeLine = pg.PlotCurveItem(x=[0,1],y=[1,0], \
+        #   pen=pg.mkPen({'color': "FFF"}),antialias=True)
         self.pressureSlowPlot.addItem(self.minPressureLine)
         self.pressureSlowPlot.addItem(self.maxPressureLine)
                        

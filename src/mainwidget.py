@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file '../QtCreatorUI/mainwidget.ui'
 #
-# Created: Tue Aug 30 12:18:26 2016
+# Created: Wed Dec 14 09:39:32 2016
 #      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -26,7 +26,7 @@ except AttributeError:
 class Ui_MainWidget(object):
     def setupUi(self, MainWidget):
         MainWidget.setObjectName(_fromUtf8("MainWidget"))
-        MainWidget.resize(791, 488)
+        MainWidget.resize(791, 686)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -169,6 +169,23 @@ class Ui_MainWidget(object):
         self.testVertLayout = QtGui.QVBoxLayout()
         self.testVertLayout.setSpacing(0)
         self.testVertLayout.setObjectName(_fromUtf8("testVertLayout"))
+        self.heartRateText = QtGui.QPlainTextEdit(MainWidget)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.heartRateText.sizePolicy().hasHeightForWidth())
+        self.heartRateText.setSizePolicy(sizePolicy)
+        self.heartRateText.setMinimumSize(QtCore.QSize(250, 60))
+        self.heartRateText.setMaximumSize(QtCore.QSize(250, 60))
+        self.heartRateText.setStyleSheet(_fromUtf8("font: 13pt \"Droid Sans Mono\";\n"
+"color: rgb(206, 0, 0);"))
+        self.heartRateText.setFrameShape(QtGui.QFrame.NoFrame)
+        self.heartRateText.setFrameShadow(QtGui.QFrame.Plain)
+        self.heartRateText.setLineWidth(0)
+        self.heartRateText.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.heartRateText.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.heartRateText.setObjectName(_fromUtf8("heartRateText"))
+        self.testVertLayout.addWidget(self.heartRateText)
         self.modeText = QtGui.QPlainTextEdit(MainWidget)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
@@ -274,6 +291,22 @@ class Ui_MainWidget(object):
         self.hpText.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.hpText.setObjectName(_fromUtf8("hpText"))
         self.testVertLayout.addWidget(self.hpText)
+        self.temperatureText = QtGui.QPlainTextEdit(MainWidget)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.temperatureText.sizePolicy().hasHeightForWidth())
+        self.temperatureText.setSizePolicy(sizePolicy)
+        self.temperatureText.setMinimumSize(QtCore.QSize(250, 60))
+        self.temperatureText.setMaximumSize(QtCore.QSize(250, 60))
+        self.temperatureText.setStyleSheet(_fromUtf8("font: 13pt \"Droid Sans Mono\";"))
+        self.temperatureText.setFrameShape(QtGui.QFrame.NoFrame)
+        self.temperatureText.setFrameShadow(QtGui.QFrame.Plain)
+        self.temperatureText.setLineWidth(0)
+        self.temperatureText.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.temperatureText.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.temperatureText.setObjectName(_fromUtf8("temperatureText"))
+        self.testVertLayout.addWidget(self.temperatureText)
         spacerItem2 = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         self.testVertLayout.addItem(spacerItem2)
         self.horizontalLayout_8.addLayout(self.testVertLayout)
@@ -297,6 +330,7 @@ class Ui_MainWidget(object):
 "</style></head><body style=\" font-family:\'Droid Sans\'; font-size:9pt; font-weight:400; font-style:normal;\">\n"
 "<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt;\">Plot Refresh Period:</span></p></body></html>", None))
         self.fastUpdatePeriod.setSuffix(_translate("MainWidget", " sec", None))
+        self.heartRateText.setPlainText(_translate("MainWidget", "Heart Rate: ", None))
         self.modeText.setPlainText(_translate("MainWidget", "Mode: ", None))
         self.canulaText.setPlainText(_translate("MainWidget", "Canula\n"
 "Pmax: 0.0 cmH20\n"
@@ -308,5 +342,7 @@ class Ui_MainWidget(object):
 "P: 0.0 psi  V: 0.01 mL", None))
         self.hpText.setPlainText(_translate("MainWidget", "HP Gas\n"
 "P: 0.0 psi  V: 0.01 mL", None))
+        self.temperatureText.setPlainText(_translate("MainWidget", "Bore Temp:\n"
+"Animal Temp:", None))
 
 from pyqtgraph import PlotWidget
