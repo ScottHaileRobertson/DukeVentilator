@@ -29,9 +29,9 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.NEXT_TEXT_UPDATE = 1
         self.SLOW_UPDATE_PERIOD = 5
         self.NEXT_SLOW_UPDATE = 1 
-        self.MAX_TRIGGERS_DISP = 20
+        self.MAX_TRIGGERS_DISP = 200
         self.MAX_HEARTBEAT_DISP = 200
-        self.HEART_BEATS_TO_AVG = 10
+        self.HEART_BEATS_TO_AVG = 50
         self.MAX_TIME_BETWEEN_HEARTBEATS = 30
         self.start_time = 0
         self.HEART_BEATS_COUNTED = 0
@@ -103,6 +103,8 @@ class DataMonitoringWindow(QtGui.QWidget):
         self.slow_minPressure_queue = []
         self.slow_maxPressure_queue = []
         self.slow_tidalVolume_queue = []
+        self.slow_heartRate_queue = []
+        self.slow_timeHR_queue = []
         
         self.ui.fastUpdatePeriod.valueChanged.connect(self.updatePlotTimeRange)
         self.ui.slowUpdatePeriod.valueChanged.connect(self.updateSlowPlotRefreshRate)
@@ -211,10 +213,10 @@ class DataMonitoringWindow(QtGui.QWidget):
         GPIO.setup(5, GPIO.IN)
         GPIO.add_event_detect(5, GPIO.BOTH, callback=self.hpVsO2Changed, bouncetime=500)
         GPIO.setup(13, GPIO.IN)
-        GPIO.add_event_detect(13, GPIO.BOTH, callback=self.triggerChanged, bouncetime=500)
+        GPIO.add_event_detect(13, GPIO.BOTH, callback=self.triggerChanged, bouncetime=1)
         
         GPIO.setup(19, GPIO.IN)
-        GPIO.add_event_detect(19, GPIO.BOTH, callback=self.heartBeatDetected, bouncetime=500)
+        GPIO.add_event_detect(19, GPIO.RISING, callback=self.heartBeatDetected, bouncetime=1)
         
         self.nitrogenModeOn = GPIO.input(5)
         
@@ -439,6 +441,11 @@ class DataMonitoringWindow(QtGui.QWidget):
 
                   heart_rate_string = "Heart Rate: %4.1f BPM" % heartRate
                   self.ui.heartRateText.setPlainText(heart_rate_string);
+
+                  self.slow_heartRate_queue.append(heartRate)
+                  self.slow_timeHR_queue.append(elapsed_time)
+                  self.heartRateLine.setData(self.slow_timeHR_queue,self.slow_heartRate_queue)
+                  
             
             # Calculate Temperatures            
             bore_temp = np.polyval(self.tempSensor_fit,self.dataFetcher.getDataFromChannel(7))
@@ -460,4 +467,3 @@ if __name__ == '__main__':
         win.show()
         win.startGraphing()
         sys.exit(app.exec_())
-
