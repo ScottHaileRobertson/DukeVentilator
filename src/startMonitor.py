@@ -227,7 +227,7 @@ class DataMonitoringWindow(QtGui.QWidget):
 
         # Add empty heart rate line
         # self.temperatureLine = pg.PlotCurveItem(x=[1,5],y=[0,5], \
-           pen=self.temperaturePen,antialias=True)
+        #   pen=self.temperaturePen,antialias=True)
         # self.temperatureViewbox.addItem(self.temperatureLine)
 
         self.updateViews();
